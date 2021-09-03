@@ -1,6 +1,8 @@
 #include "Game.h"
 #include "Vertex.h"
 #include "Input.h"
+#include <vector>
+#include <cmath>
 
 // Needed for a helper function to read compiled shader files from the hard drive
 #pragma comment(lib, "d3dcompiler.lib")
@@ -162,7 +164,7 @@ void Game::CreateBasicGeometry()
 	//    knowing the exact size (in pixels) of the image/window/etc.  
 	// - Long story short: Resizing the window also resizes the triangle,
 	//    since we're describing the triangle in terms of the window itself
-	Vertex vertices[] =
+	Vertex verticesTri[] =
 	{
 		{ XMFLOAT3(+0.0f, +0.5f, +0.0f), red },
 		{ XMFLOAT3(+0.5f, -0.5f, +0.0f), blue },
@@ -174,11 +176,28 @@ void Game::CreateBasicGeometry()
 	// - Indices are technically not required if the vertices are in the buffer 
 	//    in the correct order and each one will be used exactly once
 	// - But just to see how it's done...
-	unsigned int indices[] = { 0, 1, 2 };
+	unsigned int indicesTri[] = { 0, 1, 2 };
 
-	mesh1 = std::shared_ptr<Mesh>(new Mesh(vertices, 3, indices, 3, device, context));
+	// Set up vertices for a pentagon
+	Vertex verticesPent[] =
+	{
+		{ XMFLOAT3(-0.750f, +0.25f, +0.0f) , red },
+		{ XMFLOAT3(-1.000f, +0.00f, +0.0f) , blue },
+		{ XMFLOAT3(-0.875f, -0.25f, +0.0f) , green },
+		{ XMFLOAT3(-0.625f, -0.25f, +0.0f) , red },
+		{ XMFLOAT3(-0.500f, +0.00f, +0.0f) , blue },
+		{ XMFLOAT3(-0.750f, +0.00f, +0.0f) , green }
+	};
+
+	// Set up the tris for a pentagon
+	unsigned int indicesPent[] = { 0, 5, 1, 1, 5, 2, 5, 3, 2, 5, 4, 3, 0, 4, 5};
+
+	tri = std::shared_ptr<Mesh>(new Mesh(verticesTri, 3, indicesTri, 3, device, context));
+	pent = std::shared_ptr<Mesh>(new Mesh(verticesPent, 6, indicesPent, 15, device, context));
+
+	// Create a circle and assign it to a circle
+	GenerateCircle(0.25f, 20, red);
 }
-
 
 // --------------------------------------------------------
 // Handle resizing DirectX "stuff" to match the new window size.
@@ -235,7 +254,9 @@ void Game::Draw(float deltaTime, float totalTime)
 	context->IASetInputLayout(inputLayout.Get());
 
 	// Draw meshes
-	mesh1->Draw();
+	tri->Draw();
+	pent->Draw();
+	circle->Draw();
 
 	// Present the back buffer to the user
 	//  - Puts the final frame we're drawing into the window so the user can see it
@@ -245,4 +266,68 @@ void Game::Draw(float deltaTime, float totalTime)
 	// Due to the usage of a more sophisticated swap chain,
 	// the render target must be re-bound after every call to Present()
 	context->OMSetRenderTargets(1, backBufferRTV.GetAddressOf(), depthStencilView.Get());
+}
+
+
+// This method generates a circle and assigns it to the circle field.
+// This will be deleted ASAP because it doesn't need to be here at all
+// after assignment 1. xOffset has a default val of 0.75f
+void Game::GenerateCircle(float radius, int subdivisions, XMFLOAT4 color, float xOffset)
+{
+	Vertex center = { XMFLOAT3(0.0f + xOffset, 0.0f, 0.0f), color };
+
+	// get the angle per subdivision and convert to radians
+	float fRadsPerSubdiv = (360.0f / subdivisions) * 3.1415926535897932384 / 180;
+
+	// each subdivision constitutes one new outer vertex, except the
+	// last tri in which the last and first vertices are re-used. this 
+	// std::vector will hold all outer vertices so they can be reused.
+	// The center vertex will be inserted at index 0 after all verts have been created.
+	std::vector<Vertex> outerVertices;
+	std::vector<unsigned int> indices;
+
+	// make first vertex manually, starting at an angle of 0
+	outerVertices.push_back({ XMFLOAT3(std::cosf(0) * radius + xOffset, std::sinf(0) * radius, 0.0f), color });
+
+	for (int i = 0; i < subdivisions; i++)
+	{
+		// include previous outer vertex in this tri
+		Vertex prevVert = outerVertices[i];
+
+		// number of the next vertex, with the first being 0, and the subsequent being 1...(a_nSubdivisions - 1)
+		int nextVert = (i + 1) % subdivisions;
+		// If we're back to the first vertex...
+		if (nextVert == 0)
+		{
+			// add the tri and exit for loop
+			indices.push_back(0);
+			indices.push_back(i);
+			// -1 for now will represent the center
+			indices.push_back(-1);
+			break;
+		}
+		else
+		{
+			// create new outer vertex based on the vertex's number
+			Vertex newVert = { XMFLOAT3(std::cosf(nextVert * fRadsPerSubdiv) * radius + xOffset, std::sinf(nextVert * fRadsPerSubdiv) * radius, 0.0f), color };
+
+			// add the tri and push the newly made vertex onto the 
+			// list of outer vertices to be used for the next tri
+			indices.push_back(-1);
+			indices.push_back(i + 1);
+			indices.push_back(i);
+
+			outerVertices.push_back(newVert);
+		}
+	}
+
+	// insert the center, offset all indices by 1 to account for this
+	outerVertices.insert(outerVertices.begin(), center);
+	for (int i = 0; i < indices.size(); i++)
+	{
+		indices[i] += 1;
+	}
+
+	// assign the circle mesh with these verts/indices
+	circle = std::shared_ptr<Mesh>(new Mesh(&outerVertices[0], outerVertices.size(), &indices[0], indices.size(), device, context));
 }

@@ -6,6 +6,8 @@
 class Mesh
 {
 public:
+    // Creates a mesh with the given information. This will create a vertex buffer and
+    // an index buffer, and it will save the deviceContext and numIndices for future use.
     Mesh(
         Vertex* _vertices, 
         int _numVerts, 
@@ -16,9 +18,12 @@ public:
 
     ~Mesh();
 
+    // Methods to retrieve the otherwise private vertex buffer, index buffer, and index count
     Microsoft::WRL::ComPtr<ID3D11Buffer> GetVertexBuffer();
     Microsoft::WRL::ComPtr<ID3D11Buffer> GetIndexBuffer();
     int GetIndexCount();
+
+    // Handles the drawing of this mesh.
     void Draw();
 
 private:
