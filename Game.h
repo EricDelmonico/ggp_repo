@@ -41,5 +41,7 @@ private:
 	std::shared_ptr<Mesh> tri;
 	std::shared_ptr<Mesh> pent;
 	std::shared_ptr<Mesh> circle;
+
+	Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer;
 };
 

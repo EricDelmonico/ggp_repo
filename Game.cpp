@@ -7,6 +7,7 @@
 // Needed for a helper function to read compiled shader files from the hard drive
 #pragma comment(lib, "d3dcompiler.lib")
 #include <d3dcompiler.h>
+#include "BufferStructs.h"
 
 // For the DirectX Math library
 using namespace DirectX;
@@ -66,6 +67,16 @@ void Game::Init()
 	// geometric primitives (points, lines or triangles) we want to draw.  
 	// Essentially: "What kind of shape should the GPU draw with our data?"
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	// Set up the vertex shader cbuffer for Assignment 3
+	unsigned int size = sizeof(VertexShaderExternalData);
+	size = (size + 15) / 16 * 16;
+	D3D11_BUFFER_DESC cbDesc = {};
+	cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	cbDesc.ByteWidth = size; // Size to the nearest multiple of 16 ceiling
+	cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	cbDesc.Usage = D3D11_USAGE_DYNAMIC;
+	device->CreateBuffer(&cbDesc, 0, vsConstantBuffer.GetAddressOf());
 }
 
 // --------------------------------------------------------
@@ -253,6 +264,22 @@ void Game::Draw(float deltaTime, float totalTime)
 	// - However, this isn't always the case (but might be for this course)
 	context->IASetInputLayout(inputLayout.Get());
 
+	// Set cbuffer data
+	VertexShaderExternalData vsData;
+	//vsData.colorTint = XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f);
+	vsData.colorTint = XMFLOAT4(0.5f, 0.5f, 1.0f, 1.0f);
+	vsData.offset = XMFLOAT3(0.25f, 0.05, 0.0f);
+	// Copy cbuffer data to the resource
+	D3D11_MAPPED_SUBRESOURCE mappedBuffer = {};
+	context->Map(vsConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedBuffer);
+	memcpy(mappedBuffer.pData, &vsData, sizeof(vsData));
+	context->Unmap(vsConstantBuffer.Get(), 0);
+	// Bind cbuffer
+	context->VSSetConstantBuffers(
+		0, // Which slot/register to bind the buffer to?
+		1, // How many are we activating?
+		vsConstantBuffer.GetAddressOf());
+
 	// Draw meshes
 	tri->Draw();
 	pent->Draw();
@@ -277,7 +304,7 @@ void Game::GenerateCircle(float radius, int subdivisions, XMFLOAT4 color, float 
 	Vertex center = { XMFLOAT3(0.0f + xOffset, 0.0f, 0.0f), color };
 
 	// get the angle per subdivision and convert to radians
-	float fRadsPerSubdiv = (360.0f / subdivisions) * 3.1415926535897932384 / 180;
+	float fRadsPerSubdiv = (360.0f / subdivisions) * 3.1415926535897932384f / 180;
 
 	// each subdivision constitutes one new outer vertex, except the
 	// last tri in which the last and first vertices are re-used. this 
@@ -329,5 +356,5 @@ void Game::GenerateCircle(float radius, int subdivisions, XMFLOAT4 color, float 
 	}
 
 	// assign the circle mesh with these verts/indices
-	circle = std::shared_ptr<Mesh>(new Mesh(&outerVertices[0], outerVertices.size(), &indices[0], indices.size(), device, context));
+	circle = std::shared_ptr<Mesh>(new Mesh(&outerVertices[0], (int)outerVertices.size(), &indices[0], (int)indices.size(), device, context));
 }
