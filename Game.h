@@ -4,7 +4,9 @@
 #include <DirectXMath.h>
 #include <wrl/client.h> // Used for ComPtr - a smart pointer for COM objects
 #include "Mesh.h"
+#include "Entity.h"
 #include <memory>
+#include <vector>
 
 class Game 
 	: public DXCore
@@ -26,7 +28,7 @@ private:
 	// Initialization helper methods - feel free to customize, combine, etc.
 	void LoadShaders(); 
 	void CreateBasicGeometry();
-	void GenerateCircle(float radius, int subdivisions, DirectX::XMFLOAT4 color, float xOffset = 0.75f);
+	void GenerateCircle(float radius, int subdivisions, DirectX::XMFLOAT4 color, float xOffset);
 	
 	// Note the usage of ComPtr below
 	//  - This is a smart pointer for objects that abide by the
@@ -41,6 +43,8 @@ private:
 	std::shared_ptr<Mesh> tri;
 	std::shared_ptr<Mesh> pent;
 	std::shared_ptr<Mesh> circle;
+
+	std::vector<Entity> entities;
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer;
 };

@@ -81,7 +81,7 @@ void Transform::Rotate(float pitch, float yaw, float roll)
     pitchYawRoll.y += yaw;
     pitchYawRoll.z += roll;
 
-    matricesDirty = true;
+     matricesDirty = true;
 }
 
 void Transform::Scale(float x, float y, float z)

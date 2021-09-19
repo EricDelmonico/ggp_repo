@@ -179,7 +179,7 @@ void Game::CreateBasicGeometry()
 	{
 		{ XMFLOAT3(+0.0f, +0.5f, +0.0f), red },
 		{ XMFLOAT3(+0.5f, -0.5f, +0.0f), blue },
-		{ XMFLOAT3(-0.5f, -0.5f, +0.0f), green },
+		{ XMFLOAT3(-0.5f, -0.5f, +0.1f), green },
 	};
 
 	// Set up the indices, which tell us which vertices to use and in which order
@@ -192,12 +192,12 @@ void Game::CreateBasicGeometry()
 	// Set up vertices for a pentagon
 	Vertex verticesPent[] =
 	{
-		{ XMFLOAT3(-0.750f, +0.25f, +0.0f) , red },
-		{ XMFLOAT3(-1.000f, +0.00f, +0.0f) , blue },
-		{ XMFLOAT3(-0.875f, -0.25f, +0.0f) , green },
-		{ XMFLOAT3(-0.625f, -0.25f, +0.0f) , red },
-		{ XMFLOAT3(-0.500f, +0.00f, +0.0f) , blue },
-		{ XMFLOAT3(-0.750f, +0.00f, +0.0f) , green }
+		{ XMFLOAT3(+0.00f, +0.5f, +0.0f) , red },
+		{ XMFLOAT3(-0.50f, +0.0f, +0.0f) , blue },
+		{ XMFLOAT3(-0.25f, -0.5f, +0.0f) , green },
+		{ XMFLOAT3(+0.25f, -0.5f, +0.0f) , red },
+		{ XMFLOAT3(+0.50f, +0.0f, +0.0f) , blue },
+		{ XMFLOAT3(+0.00f, +0.0f, +0.0f) , green }
 	};
 
 	// Set up the tris for a pentagon
@@ -207,7 +207,27 @@ void Game::CreateBasicGeometry()
 	pent = std::shared_ptr<Mesh>(new Mesh(verticesPent, 6, indicesPent, 15, device, context));
 
 	// Create a circle and assign it to a circle
-	GenerateCircle(0.25f, 20, red);
+	GenerateCircle(0.25f, 20, red, 0);
+
+	// Assign geometry to some entities
+	entities.push_back(Entity(pent.get()));
+	entities.push_back(Entity(tri.get()));
+	entities.push_back(Entity(circle.get()));
+	entities.push_back(Entity(pent.get()));
+	entities.push_back(Entity(circle.get()));
+
+	entities[0].GetTransform()->MoveAbsolute(0.6f, 0, 0);
+	entities[2].GetTransform()->MoveAbsolute(-0.6f, 0, 0);
+	entities[3].GetTransform()->MoveAbsolute(0, -0.6f, 0);
+	entities[4].GetTransform()->MoveAbsolute(-0, 0.6f, 0);
+
+	// Move entities forward a bit so their z's are between 0 and 1 even when rotated
+	auto entityIterator = entities.begin();
+	while (entityIterator < entities.end())
+	{
+		entityIterator->GetTransform()->MoveAbsolute(0, 0, 0.5f);
+		entityIterator++;
+	}
 }
 
 // --------------------------------------------------------
@@ -228,6 +248,17 @@ void Game::Update(float deltaTime, float totalTime)
 	// Example input checking: Quit if the escape key is pressed
 	if (Input::GetInstance().KeyDown(VK_ESCAPE))
 		Quit();
+
+	// Move/scale/rotate entities every frame
+	auto entityIterator = entities.begin();
+	while (entityIterator < entities.end())
+	{
+		auto transform = entityIterator->GetTransform();
+		transform->SetScale(0.125f * std::sin(totalTime) + 0.25f, 0.125f * std::sin(totalTime) + 0.25f, 0);
+		transform->MoveAbsolute(0, std::sin(totalTime) / 5 * deltaTime, 0);
+		transform->Rotate(1.0f * deltaTime, 1.0f * deltaTime, 0);
+		entityIterator++;
+	}
 }
 
 // --------------------------------------------------------
@@ -264,26 +295,13 @@ void Game::Draw(float deltaTime, float totalTime)
 	// - However, this isn't always the case (but might be for this course)
 	context->IASetInputLayout(inputLayout.Get());
 
-	// Set cbuffer data
-	VertexShaderExternalData vsData;
-	//vsData.colorTint = XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f);
-	vsData.colorTint = XMFLOAT4(0.5f, 0.5f, 1.0f, 1.0f);
-	XMStoreFloat4x4(&vsData.worldMatrix, XMMatrixIdentity());
-	// Copy cbuffer data to the resource
-	D3D11_MAPPED_SUBRESOURCE mappedBuffer = {};
-	context->Map(vsConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedBuffer);
-	memcpy(mappedBuffer.pData, &vsData, sizeof(vsData));
-	context->Unmap(vsConstantBuffer.Get(), 0);
-	// Bind cbuffer
-	context->VSSetConstantBuffers(
-		0, // Which slot/register to bind the buffer to?
-		1, // How many are we activating?
-		vsConstantBuffer.GetAddressOf());
-
-	// Draw meshes
-	tri->Draw();
-	pent->Draw();
-	circle->Draw();
+	// Draw entities
+	auto entityIterator = entities.begin();
+	while (entityIterator < entities.end())
+	{
+		entityIterator->Draw(context, vsConstantBuffer);
+		entityIterator++;
+	}
 
 	// Present the back buffer to the user
 	//  - Puts the final frame we're drawing into the window so the user can see it
