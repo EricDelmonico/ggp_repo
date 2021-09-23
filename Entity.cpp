@@ -27,13 +27,19 @@ Transform* Entity::GetTransform()
 }
 
 // Draws this Entity using its mesh and transform
-void Entity::Draw(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer)
+void Entity::Draw(
+	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context,
+	Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer,
+	Camera* camera)
 {
 	// Set cbuffer data
 	VertexShaderExternalData vsData;
 	//vsData.colorTint = XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f);
 	vsData.colorTint = XMFLOAT4(0.5f, 0.5f, 1.0f, 1.0f);
 	vsData.worldMatrix = transform.GetWorldMatrix();
+	vsData.viewMatrix = camera->GetView();
+	vsData.projectionMatrix = camera->GetProjection();
+
 	// Copy cbuffer data to the resource
 	D3D11_MAPPED_SUBRESOURCE mappedBuffer = {};
 	context->Map(vsConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedBuffer);

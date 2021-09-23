@@ -5,6 +5,7 @@
 #include <wrl/client.h> // Used for ComPtr - a smart pointer for COM objects
 #include "Mesh.h"
 #include "Entity.h"
+#include "Camera.h"
 #include <memory>
 #include <vector>
 
@@ -45,6 +46,8 @@ private:
 	std::shared_ptr<Mesh> circle;
 
 	std::vector<Entity> entities;
+
+	std::shared_ptr<Camera> camera;
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer;
 };

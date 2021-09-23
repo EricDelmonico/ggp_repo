@@ -21,12 +21,14 @@ using namespace DirectX;
 // hInstance - the application's OS-level handle (unique ID)
 // --------------------------------------------------------
 Game::Game(HINSTANCE hInstance)
-	: DXCore(
+	: camera(0),
+	DXCore(
 		hInstance,		   // The application's handle
 		"DirectX Game",	   // Text for the window's title bar
 		1280,			   // Width of the window's client area
 		720,			   // Height of the window's client area
 		true)			   // Show extra stats (fps) in title bar?
+		
 {
 
 #if defined(DEBUG) || defined(_DEBUG)
@@ -77,6 +79,9 @@ void Game::Init()
 	cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	cbDesc.Usage = D3D11_USAGE_DYNAMIC;
 	device->CreateBuffer(&cbDesc, 0, vsConstantBuffer.GetAddressOf());
+
+	// Camera once we have aspect ratio available
+	camera = std::shared_ptr<Camera>(new Camera(0, 0, -5, 5.0f, 0.5f, XM_PIDIV2, (float)width / height));
 }
 
 // --------------------------------------------------------
@@ -238,6 +243,14 @@ void Game::OnResize()
 {
 	// Handle base-level DX resize stuff
 	DXCore::OnResize();
+
+	// Ensure we update the camera whenever the window resizes
+	// Note: this could trigger before Init(), so ensure our ptr
+	// is valid before calling UpdateProjectionMatrix()
+	if (camera) 
+	{
+		camera->UpdateProjectionMatrix((float)width / height);
+	}
 }
 
 // --------------------------------------------------------
@@ -259,6 +272,15 @@ void Game::Update(float deltaTime, float totalTime)
 		transform->Rotate(1.0f * deltaTime, 1.0f * deltaTime, 0);
 		entityIterator++;
 	}
+
+	// Update the camera every frame
+	camera->Update(deltaTime);
+
+	// Play with field of view
+	float fov = camera->GetFoV();
+	if (Input::GetInstance().KeyDown('O')) fov += 1.0f * deltaTime;
+	if (Input::GetInstance().KeyDown('P')) fov -= 1.0f * deltaTime;
+	camera->SetFoV(fov);
 }
 
 // --------------------------------------------------------
@@ -295,11 +317,12 @@ void Game::Draw(float deltaTime, float totalTime)
 	// - However, this isn't always the case (but might be for this course)
 	context->IASetInputLayout(inputLayout.Get());
 
+	// TODO: Change to auto& e : entities
 	// Draw entities
 	auto entityIterator = entities.begin();
 	while (entityIterator < entities.end())
 	{
-		entityIterator->Draw(context, vsConstantBuffer);
+		entityIterator->Draw(context, vsConstantBuffer, camera.get());
 		entityIterator++;
 	}
 

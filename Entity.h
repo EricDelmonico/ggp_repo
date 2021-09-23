@@ -1,6 +1,7 @@
 #pragma once
 #include "Mesh.h"
 #include "Transform.h"
+#include "Camera.h"
 #include <memory>
 
 class Entity
@@ -15,7 +16,10 @@ public:
     // Returns a pointer to this Entity's transform
     Transform* GetTransform();
     // Draws this Entity using its mesh and transform
-    void Draw(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer);
+    void Draw(
+        Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, 
+        Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer, 
+        Camera* camera);
 private:
     Transform transform;
     Mesh* mesh;
