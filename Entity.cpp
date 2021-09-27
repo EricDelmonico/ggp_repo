@@ -4,9 +4,9 @@
 using namespace DirectX;
 
 // Creates a new entity with the given mesh
-Entity::Entity(Mesh* _mesh)
+Entity::Entity(std::shared_ptr<Mesh> _mesh, std::shared_ptr<Material> material)
+	: mesh(_mesh), material(material)
 {
-    mesh = _mesh;
 	transform = Transform();
 }
 
@@ -17,7 +17,7 @@ Entity::~Entity()
 // Returns a pointer to this Entity's Mesh
 Mesh* Entity::GetMesh()
 {
-    return mesh;
+    return mesh.get();
 }
 
 // Returns a pointer to this Entity's transform
@@ -32,10 +32,17 @@ void Entity::Draw(
 	Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer,
 	Camera* camera)
 {
+	// Set the vertex and pixel shaders to use for the next Draw() command
+	//  - These don't technically need to be set every frame
+	//  - Once you start applying different shaders to different objects,
+	//    you'll need to swap the current shaders before each draw
+	context->VSSetShader(material->GetVertexShader().Get(), 0, 0);
+	context->PSSetShader(material->GetPixelShader().Get(), 0, 0);
+
 	// Set cbuffer data
 	VertexShaderExternalData vsData;
 	//vsData.colorTint = XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f);
-	vsData.colorTint = XMFLOAT4(0.5f, 0.5f, 1.0f, 1.0f);
+	vsData.colorTint = *material->GetColorTint();
 	vsData.worldMatrix = transform.GetWorldMatrix();
 	vsData.viewMatrix = camera->GetView();
 	vsData.projectionMatrix = camera->GetProjection();

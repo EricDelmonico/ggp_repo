@@ -6,6 +6,7 @@
 #include "Mesh.h"
 #include "Entity.h"
 #include "Camera.h"
+#include "Material.h"
 #include <memory>
 #include <vector>
 
@@ -46,6 +47,7 @@ private:
 	std::shared_ptr<Mesh> circle;
 
 	std::vector<Entity> entities;
+	std::vector<std::shared_ptr<Material>> materials;
 
 	std::shared_ptr<Camera> camera;
 

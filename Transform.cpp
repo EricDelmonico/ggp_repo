@@ -18,8 +18,6 @@ Transform::~Transform()
 {
 }
 
-// TODO use worldMatrix for below getters
-
 DirectX::XMFLOAT3 Transform::GetUp()
 {
     // Take the world up vector and rotate it by out own rotation values
@@ -149,7 +147,6 @@ void Transform::UpdateMatrices()
     if (!matricesDirty)
         return;
 
-    // TODO: from vector
     // Actually update the matrices by creating the individual transformation 
     // matrices and combining
     XMMATRIX transMat   = XMMatrixTranslation(position.x, position.y, position.z);

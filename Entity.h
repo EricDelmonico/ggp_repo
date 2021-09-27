@@ -2,13 +2,14 @@
 #include "Mesh.h"
 #include "Transform.h"
 #include "Camera.h"
+#include "Material.h"
 #include <memory>
 
 class Entity
 {
 public:
     // Creates a new entity with the given mesh
-    Entity(Mesh* _mesh);
+    Entity(std::shared_ptr<Mesh> _mesh, std::shared_ptr<Material> material);
     ~Entity();
 
     // Returns a pointer to this Entity's Mesh
@@ -22,6 +23,7 @@ public:
         Camera* camera);
 private:
     Transform transform;
-    Mesh* mesh;
+    std::shared_ptr<Mesh> mesh;
+    std::shared_ptr<Material> material;
 };
 

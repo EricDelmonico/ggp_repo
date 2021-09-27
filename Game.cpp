@@ -21,20 +21,20 @@ using namespace DirectX;
 // hInstance - the application's OS-level handle (unique ID)
 // --------------------------------------------------------
 Game::Game(HINSTANCE hInstance)
-	: camera(0),
-	DXCore(
-		hInstance,		   // The application's handle
-		"DirectX Game",	   // Text for the window's title bar
-		1280,			   // Width of the window's client area
-		720,			   // Height of the window's client area
-		true)			   // Show extra stats (fps) in title bar?
-		
+    : camera(0),
+    DXCore(
+        hInstance,		   // The application's handle
+        "DirectX Game",	   // Text for the window's title bar
+        1280,			   // Width of the window's client area
+        720,			   // Height of the window's client area
+        true)			   // Show extra stats (fps) in title bar?
+
 {
 
 #if defined(DEBUG) || defined(_DEBUG)
-	// Do we want a console window?  Probably only in debug mode
-	CreateConsoleWindow(500, 120, 32, 120);
-	printf("Console window created successfully.  Feel free to printf() here.\n");
+    // Do we want a console window?  Probably only in debug mode
+    CreateConsoleWindow(500, 120, 32, 120);
+    printf("Console window created successfully.  Feel free to printf() here.\n");
 #endif
 
 }
@@ -46,10 +46,10 @@ Game::Game(HINSTANCE hInstance)
 // --------------------------------------------------------
 Game::~Game()
 {
-	// Note: Since we're using smart pointers (ComPtr),
-	// we don't need to explicitly clean up those DirectX objects
-	// - If we weren't using smart pointers, we'd need
-	//   to call Release() on each DirectX object created in Game
+    // Note: Since we're using smart pointers (ComPtr),
+    // we don't need to explicitly clean up those DirectX objects
+    // - If we weren't using smart pointers, we'd need
+    //   to call Release() on each DirectX object created in Game
 
 }
 
@@ -59,29 +59,29 @@ Game::~Game()
 // --------------------------------------------------------
 void Game::Init()
 {
-	// Helper methods for loading shaders, creating some basic
-	// geometry to draw and some simple camera matrices.
-	//  - You'll be expanding and/or replacing these later
-	LoadShaders();
-	CreateBasicGeometry();
-	
-	// Tell the input assembler stage of the pipeline what kind of
-	// geometric primitives (points, lines or triangles) we want to draw.  
-	// Essentially: "What kind of shape should the GPU draw with our data?"
-	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    // Helper methods for loading shaders, creating some basic
+    // geometry to draw and some simple camera matrices.
+    //  - You'll be expanding and/or replacing these later
+    LoadShaders();
+    CreateBasicGeometry();
 
-	// Set up the vertex shader cbuffer for Assignment 3
-	unsigned int size = sizeof(VertexShaderExternalData);
-	size = (size + 15) / 16 * 16;
-	D3D11_BUFFER_DESC cbDesc = {};
-	cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	cbDesc.ByteWidth = size; // Size to the nearest multiple of 16 ceiling
-	cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	cbDesc.Usage = D3D11_USAGE_DYNAMIC;
-	device->CreateBuffer(&cbDesc, 0, vsConstantBuffer.GetAddressOf());
+    // Tell the input assembler stage of the pipeline what kind of
+    // geometric primitives (points, lines or triangles) we want to draw.  
+    // Essentially: "What kind of shape should the GPU draw with our data?"
+    context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	// Camera once we have aspect ratio available
-	camera = std::shared_ptr<Camera>(new Camera(0, 0, -5, 5.0f, 0.5f, XM_PIDIV2, (float)width / height));
+    // Set up the vertex shader cbuffer for Assignment 3
+    unsigned int size = sizeof(VertexShaderExternalData);
+    size = (size + 15) / 16 * 16;
+    D3D11_BUFFER_DESC cbDesc = {};
+    cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    cbDesc.ByteWidth = size; // Size to the nearest multiple of 16 ceiling
+    cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    cbDesc.Usage = D3D11_USAGE_DYNAMIC;
+    device->CreateBuffer(&cbDesc, 0, vsConstantBuffer.GetAddressOf());
+
+    // Camera once we have aspect ratio available
+    camera = std::shared_ptr<Camera>(new Camera(0, 0, -5, 5.0f, 0.5f, XM_PIDIV2, (float)width / height));
 }
 
 // --------------------------------------------------------
@@ -94,65 +94,65 @@ void Game::Init()
 // --------------------------------------------------------
 void Game::LoadShaders()
 {
-	// Blob for reading raw data
-	// - This is a simplified way of handling raw data
-	ID3DBlob* shaderBlob;
+    // Blob for reading raw data
+    // - This is a simplified way of handling raw data
+    ID3DBlob* shaderBlob;
 
-	// Read our compiled vertex shader code into a blob
-	// - Essentially just "open the file and plop its contents here"
-	D3DReadFileToBlob(
-		GetFullPathTo_Wide(L"VertexShader.cso").c_str(), // Using a custom helper for file paths
-		&shaderBlob);
+    // Read our compiled vertex shader code into a blob
+    // - Essentially just "open the file and plop its contents here"
+    D3DReadFileToBlob(
+        GetFullPathTo_Wide(L"VertexShader.cso").c_str(), // Using a custom helper for file paths
+        &shaderBlob);
 
-	// Create a vertex shader from the information we
-	// have read into the blob above
-	// - A blob can give a pointer to its contents, and knows its own size
-	device->CreateVertexShader(
-		shaderBlob->GetBufferPointer(), // Get a pointer to the blob's contents
-		shaderBlob->GetBufferSize(),	// How big is that data?
-		0,								// No classes in this shader
-		vertexShader.GetAddressOf());	// The address of the ID3D11VertexShader*
-
-
-	// Create an input layout that describes the vertex format
-	// used by the vertex shader we're using
-	//  - This is used by the pipeline to know how to interpret the raw data
-	//     sitting inside a vertex buffer
-	//  - Doing this NOW because it requires a vertex shader's byte code to verify against!
-	//  - Luckily, we already have that loaded (the blob above)
-	D3D11_INPUT_ELEMENT_DESC inputElements[2] = {};
-
-	// Set up the first element - a position, which is 3 float values
-	inputElements[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;				// Most formats are described as color channels; really it just means "Three 32-bit floats"
-	inputElements[0].SemanticName = "POSITION";							// This is "POSITION" - needs to match the semantics in our vertex shader input!
-	inputElements[0].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;	// How far into the vertex is this?  Assume it's after the previous element
-
-	// Set up the second element - a color, which is 4 more float values
-	inputElements[1].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;			// 4x 32-bit floats
-	inputElements[1].SemanticName = "COLOR";							// Match our vertex shader input!
-	inputElements[1].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;	// After the previous element
-
-	// Create the input layout, verifying our description against actual shader code
-	device->CreateInputLayout(
-		inputElements,					// An array of descriptions
-		2,								// How many elements in that array
-		shaderBlob->GetBufferPointer(),	// Pointer to the code of a shader that uses this layout
-		shaderBlob->GetBufferSize(),	// Size of the shader code that uses this layout
-		inputLayout.GetAddressOf());	// Address of the resulting ID3D11InputLayout*
+    // Create a vertex shader from the information we
+    // have read into the blob above
+    // - A blob can give a pointer to its contents, and knows its own size
+    device->CreateVertexShader(
+        shaderBlob->GetBufferPointer(), // Get a pointer to the blob's contents
+        shaderBlob->GetBufferSize(),	// How big is that data?
+        0,								// No classes in this shader
+        vertexShader.GetAddressOf());	// The address of the ID3D11VertexShader*
 
 
+    // Create an input layout that describes the vertex format
+    // used by the vertex shader we're using
+    //  - This is used by the pipeline to know how to interpret the raw data
+    //     sitting inside a vertex buffer
+    //  - Doing this NOW because it requires a vertex shader's byte code to verify against!
+    //  - Luckily, we already have that loaded (the blob above)
+    D3D11_INPUT_ELEMENT_DESC inputElements[2] = {};
 
-	// Read and create the pixel shader
-	//  - Reusing the same blob here, since we're done with the vert shader code
-	D3DReadFileToBlob(
-		GetFullPathTo_Wide(L"PixelShader.cso").c_str(), // Using a custom helper for file paths
-		&shaderBlob);
+    // Set up the first element - a position, which is 3 float values
+    inputElements[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;				// Most formats are described as color channels; really it just means "Three 32-bit floats"
+    inputElements[0].SemanticName = "POSITION";							// This is "POSITION" - needs to match the semantics in our vertex shader input!
+    inputElements[0].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;	// How far into the vertex is this?  Assume it's after the previous element
 
-	device->CreatePixelShader(
-		shaderBlob->GetBufferPointer(),
-		shaderBlob->GetBufferSize(),
-		0,
-		pixelShader.GetAddressOf());
+    // Set up the second element - a color, which is 4 more float values
+    inputElements[1].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;			// 4x 32-bit floats
+    inputElements[1].SemanticName = "COLOR";							// Match our vertex shader input!
+    inputElements[1].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;	// After the previous element
+
+    // Create the input layout, verifying our description against actual shader code
+    device->CreateInputLayout(
+        inputElements,					// An array of descriptions
+        2,								// How many elements in that array
+        shaderBlob->GetBufferPointer(),	// Pointer to the code of a shader that uses this layout
+        shaderBlob->GetBufferSize(),	// Size of the shader code that uses this layout
+        inputLayout.GetAddressOf());	// Address of the resulting ID3D11InputLayout*
+
+
+
+    // Read and create the pixel shader
+    //  - Reusing the same blob here, since we're done with the vert shader code
+    D3DReadFileToBlob(
+        GetFullPathTo_Wide(L"PixelShader.cso").c_str(), // Using a custom helper for file paths
+        &shaderBlob);
+
+    device->CreatePixelShader(
+        shaderBlob->GetBufferPointer(),
+        shaderBlob->GetBufferSize(),
+        0,
+        pixelShader.GetAddressOf());
 }
 
 
@@ -162,77 +162,100 @@ void Game::LoadShaders()
 // --------------------------------------------------------
 void Game::CreateBasicGeometry()
 {
-	// Create some temporary variables to represent colors
-	// - Not necessary, just makes things more readable
-	XMFLOAT4 red = XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
-	XMFLOAT4 green = XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
-	XMFLOAT4 blue = XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
+    // Create some temporary variables to represent colors
+    // - Not necessary, just makes things more readable
+    XMFLOAT4 red = XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
+    XMFLOAT4 green = XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
+    XMFLOAT4 blue = XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
+    XMFLOAT4 white = XMFLOAT4(1, 1, 1, 1);
 
-	// Set up the vertices of the triangle we would like to draw
-	// - We're going to copy this array, exactly as it exists in memory
-	//    over to a DirectX-controlled data structure (the vertex buffer)
-	// - Note: Since we don't have a camera or really any concept of
-	//    a "3d world" yet, we're simply describing positions within the
-	//    bounds of how the rasterizer sees our screen: [-1 to +1] on X and Y
-	// - This means (0,0) is at the very center of the screen.
-	// - These are known as "Normalized Device Coordinates" or "Homogeneous 
-	//    Screen Coords", which are ways to describe a position without
-	//    knowing the exact size (in pixels) of the image/window/etc.  
-	// - Long story short: Resizing the window also resizes the triangle,
-	//    since we're describing the triangle in terms of the window itself
-	Vertex verticesTri[] =
-	{
-		{ XMFLOAT3(+0.0f, +0.5f, +0.0f), red },
-		{ XMFLOAT3(+0.5f, -0.5f, +0.0f), blue },
-		{ XMFLOAT3(-0.5f, -0.5f, +0.1f), green },
-	};
+    // Set up the vertices of the triangle we would like to draw
+    // - We're going to copy this array, exactly as it exists in memory
+    //    over to a DirectX-controlled data structure (the vertex buffer)
+    // - Note: Since we don't have a camera or really any concept of
+    //    a "3d world" yet, we're simply describing positions within the
+    //    bounds of how the rasterizer sees our screen: [-1 to +1] on X and Y
+    // - This means (0,0) is at the very center of the screen.
+    // - These are known as "Normalized Device Coordinates" or "Homogeneous 
+    //    Screen Coords", which are ways to describe a position without
+    //    knowing the exact size (in pixels) of the image/window/etc.  
+    // - Long story short: Resizing the window also resizes the triangle,
+    //    since we're describing the triangle in terms of the window itself
+    Vertex verticesTri[] =
+    {
+        { XMFLOAT3(+0.0f, +0.5f, +0.0f), white },
+        { XMFLOAT3(+0.5f, -0.5f, +0.0f), white },
+        { XMFLOAT3(-0.5f, -0.5f, +0.1f), white },
+    };
 
-	// Set up the indices, which tell us which vertices to use and in which order
-	// - This is somewhat redundant for just 3 vertices (it's a simple example)
-	// - Indices are technically not required if the vertices are in the buffer 
-	//    in the correct order and each one will be used exactly once
-	// - But just to see how it's done...
-	unsigned int indicesTri[] = { 0, 1, 2 };
+    // Set up the indices, which tell us which vertices to use and in which order
+    // - This is somewhat redundant for just 3 vertices (it's a simple example)
+    // - Indices are technically not required if the vertices are in the buffer 
+    //    in the correct order and each one will be used exactly once
+    // - But just to see how it's done...
+    unsigned int indicesTri[] = { 0, 1, 2 };
 
-	// Set up vertices for a pentagon
-	Vertex verticesPent[] =
-	{
-		{ XMFLOAT3(+0.00f, +0.5f, +0.0f) , red },
-		{ XMFLOAT3(-0.50f, +0.0f, +0.0f) , blue },
-		{ XMFLOAT3(-0.25f, -0.5f, +0.0f) , green },
-		{ XMFLOAT3(+0.25f, -0.5f, +0.0f) , red },
-		{ XMFLOAT3(+0.50f, +0.0f, +0.0f) , blue },
-		{ XMFLOAT3(+0.00f, +0.0f, +0.0f) , green }
-	};
+    // Set up vertices for a pentagon
+    Vertex verticesPent[] =
+    {
+        { XMFLOAT3(+0.00f, +0.5f, +0.0f) , white },
+        { XMFLOAT3(-0.50f, +0.0f, +0.0f) , white },
+        { XMFLOAT3(-0.25f, -0.5f, +0.0f) , white },
+        { XMFLOAT3(+0.25f, -0.5f, +0.0f) , white },
+        { XMFLOAT3(+0.50f, +0.0f, +0.0f) , white },
+        { XMFLOAT3(+0.00f, +0.0f, +0.0f) , white }
+    };
 
-	// Set up the tris for a pentagon
-	unsigned int indicesPent[] = { 0, 5, 1, 1, 5, 2, 5, 3, 2, 5, 4, 3, 0, 4, 5};
+    // Set up the tris for a pentagon
+    unsigned int indicesPent[] = { 0, 5, 1, 1, 5, 2, 5, 3, 2, 5, 4, 3, 0, 4, 5 };
 
-	tri = std::shared_ptr<Mesh>(new Mesh(verticesTri, 3, indicesTri, 3, device, context));
-	pent = std::shared_ptr<Mesh>(new Mesh(verticesPent, 6, indicesPent, 15, device, context));
+    tri = std::shared_ptr<Mesh>(new Mesh(verticesTri, 3, indicesTri, 3, device, context));
+    pent = std::shared_ptr<Mesh>(new Mesh(verticesPent, 6, indicesPent, 15, device, context));
 
-	// Create a circle and assign it to a circle
-	GenerateCircle(0.25f, 20, red, 0);
+    // Create a circle and assign it to the circle field
+    GenerateCircle(
+        0.25f,          // radius
+        20,             // subdivisions
+        white,          // color
+        0);             // x offset
 
-	// Assign geometry to some entities
-	entities.push_back(Entity(pent.get()));
-	entities.push_back(Entity(tri.get()));
-	entities.push_back(Entity(circle.get()));
-	entities.push_back(Entity(pent.get()));
-	entities.push_back(Entity(circle.get()));
+    // Make some materials.
+    // Reddish tint
+    materials.push_back(std::shared_ptr<Material>(
+        new Material(XMFLOAT4(1, 0.2f, 0.2f, 1), pixelShader, vertexShader)));
+    // Greenish tint
+    materials.push_back(std::shared_ptr<Material>(
+        new Material(XMFLOAT4(0.2f, 1, 0.2f, 1), pixelShader, vertexShader)));
+    // Blueish tint
+    materials.push_back(std::shared_ptr<Material>(
+        new Material(XMFLOAT4(0.2f, 0.2f, 1, 1), pixelShader, vertexShader)));
+    // Yellowish tint
+    materials.push_back(std::shared_ptr<Material>(
+        new Material(XMFLOAT4(1, 1, 0.2f, 1), pixelShader, vertexShader)));
+    // Purpleish tint
+    materials.push_back(std::shared_ptr<Material>(
+        new Material(XMFLOAT4(1, 0.2f, 1, 1), pixelShader, vertexShader)));
 
-	entities[0].GetTransform()->MoveAbsolute(0.6f, 0, 0);
-	entities[2].GetTransform()->MoveAbsolute(-0.6f, 0, 0);
-	entities[3].GetTransform()->MoveAbsolute(0, -0.6f, 0);
-	entities[4].GetTransform()->MoveAbsolute(-0, 0.6f, 0);
+    // Assign geometry and materials to some entities
+    entities.push_back(Entity(pent, materials[0]));
+    entities.push_back(Entity(tri, materials[1]));
+    entities.push_back(Entity(circle, materials[2]));
+    entities.push_back(Entity(pent, materials[3]));
+    entities.push_back(Entity(circle, materials[4]));
 
-	// Move entities forward a bit so their z's are between 0 and 1 even when rotated
-	auto entityIterator = entities.begin();
-	while (entityIterator < entities.end())
-	{
-		entityIterator->GetTransform()->MoveAbsolute(0, 0, 0.5f);
-		entityIterator++;
-	}
+    // Offset entites so they're not all inside each other at the center of the screen
+    entities[0].GetTransform()->MoveAbsolute(0.6f, 0, 0);
+    entities[2].GetTransform()->MoveAbsolute(-0.6f, 0, 0);
+    entities[3].GetTransform()->MoveAbsolute(0, -0.6f, 0);
+    entities[4].GetTransform()->MoveAbsolute(-0, 0.6f, 0);
+
+    // Move entities forward a bit so their z's are between 0 and 1 even when rotated
+    auto entityIterator = entities.begin();
+    while (entityIterator < entities.end())
+    {
+        entityIterator->GetTransform()->MoveAbsolute(0, 0, 0.5f);
+        entityIterator++;
+    }
 }
 
 // --------------------------------------------------------
@@ -241,16 +264,16 @@ void Game::CreateBasicGeometry()
 // --------------------------------------------------------
 void Game::OnResize()
 {
-	// Handle base-level DX resize stuff
-	DXCore::OnResize();
+    // Handle base-level DX resize stuff
+    DXCore::OnResize();
 
-	// Ensure we update the camera whenever the window resizes
-	// Note: this could trigger before Init(), so ensure our ptr
-	// is valid before calling UpdateProjectionMatrix()
-	if (camera) 
-	{
-		camera->UpdateProjectionMatrix((float)width / height);
-	}
+    // Ensure we update the camera whenever the window resizes
+    // Note: this could trigger before Init(), so ensure our ptr
+    // is valid before calling UpdateProjectionMatrix()
+    if (camera)
+    {
+        camera->UpdateProjectionMatrix((float)width / height);
+    }
 }
 
 // --------------------------------------------------------
@@ -258,29 +281,29 @@ void Game::OnResize()
 // --------------------------------------------------------
 void Game::Update(float deltaTime, float totalTime)
 {
-	// Example input checking: Quit if the escape key is pressed
-	if (Input::GetInstance().KeyDown(VK_ESCAPE))
-		Quit();
+    // Example input checking: Quit if the escape key is pressed
+    if (Input::GetInstance().KeyDown(VK_ESCAPE))
+        Quit();
 
-	// Move/scale/rotate entities every frame
-	auto entityIterator = entities.begin();
-	while (entityIterator < entities.end())
-	{
-		auto transform = entityIterator->GetTransform();
-		transform->SetScale(0.125f * std::sin(totalTime) + 0.25f, 0.125f * std::sin(totalTime) + 0.25f, 0);
-		transform->MoveAbsolute(0, std::sin(totalTime) / 5 * deltaTime, 0);
-		transform->Rotate(1.0f * deltaTime, 1.0f * deltaTime, 0);
-		entityIterator++;
-	}
+    // Move/scale/rotate entities every frame
+    auto entityIterator = entities.begin();
+    while (entityIterator < entities.end())
+    {
+        auto transform = entityIterator->GetTransform();
+        transform->SetScale(0.125f * std::sin(totalTime) + 0.25f, 0.125f * std::sin(totalTime) + 0.25f, 0);
+        transform->MoveAbsolute(0, std::sin(totalTime) / 5 * deltaTime, 0);
+        transform->Rotate(1.0f * deltaTime, 1.0f * deltaTime, 0);
+        entityIterator++;
+    }
 
-	// Update the camera every frame
-	camera->Update(deltaTime);
+    // Update the camera every frame
+    camera->Update(deltaTime);
 
-	// Play with field of view
-	float fov = camera->GetFoV();
-	if (Input::GetInstance().KeyDown('O')) fov += 1.0f * deltaTime;
-	if (Input::GetInstance().KeyDown('P')) fov -= 1.0f * deltaTime;
-	camera->SetFoV(fov);
+    // Play with field of view
+    float fov = camera->GetFoV();
+    if (Input::GetInstance().KeyDown('O')) fov += 1.0f * deltaTime;
+    if (Input::GetInstance().KeyDown('P')) fov -= 1.0f * deltaTime;
+    camera->SetFoV(fov);
 }
 
 // --------------------------------------------------------
@@ -288,52 +311,38 @@ void Game::Update(float deltaTime, float totalTime)
 // --------------------------------------------------------
 void Game::Draw(float deltaTime, float totalTime)
 {
-	// Background color (Cornflower Blue in this case) for clearing
-	const float color[4] = { 0.4f, 0.6f, 0.75f, 0.0f };
+    // Background color (Cornflower Blue in this case) for clearing
+    const float color[4] = { 0.4f, 0.6f, 0.75f, 0.0f };
 
-	// Clear the render target and depth buffer (erases what's on the screen)
-	//  - Do this ONCE PER FRAME
-	//  - At the beginning of Draw (before drawing *anything*)
-	context->ClearRenderTargetView(backBufferRTV.Get(), color);
-	context->ClearDepthStencilView(
-		depthStencilView.Get(),
-		D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
-		1.0f,
-		0);
+    // Clear the render target and depth buffer (erases what's on the screen)
+    //  - Do this ONCE PER FRAME
+    //  - At the beginning of Draw (before drawing *anything*)
+    context->ClearRenderTargetView(backBufferRTV.Get(), color);
+    context->ClearDepthStencilView(
+        depthStencilView.Get(),
+        D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
+        1.0f,
+        0);
 
+    // Ensure the pipeline knows how to interpret the data (numbers)
+    // from the vertex buffer.  
+    // - If all of your 3D models use the exact same vertex layout,
+    //    this could simply be done once in Init()
+    // - However, this isn't always the case (but might be for this course)
+    context->IASetInputLayout(inputLayout.Get());
 
-	// Set the vertex and pixel shaders to use for the next Draw() command
-	//  - These don't technically need to be set every frame
-	//  - Once you start applying different shaders to different objects,
-	//    you'll need to swap the current shaders before each draw
-	context->VSSetShader(vertexShader.Get(), 0, 0);
-	context->PSSetShader(pixelShader.Get(), 0, 0);
+    // Draw entities
+    for (auto& e : entities)
+        e.Draw(context, vsConstantBuffer, camera.get());
 
+    // Present the back buffer to the user
+    //  - Puts the final frame we're drawing into the window so the user can see it
+    //  - Do this exactly ONCE PER FRAME (always at the very end of the frame)
+    swapChain->Present(0, 0);
 
-	// Ensure the pipeline knows how to interpret the data (numbers)
-	// from the vertex buffer.  
-	// - If all of your 3D models use the exact same vertex layout,
-	//    this could simply be done once in Init()
-	// - However, this isn't always the case (but might be for this course)
-	context->IASetInputLayout(inputLayout.Get());
-
-	// TODO: Change to auto& e : entities
-	// Draw entities
-	auto entityIterator = entities.begin();
-	while (entityIterator < entities.end())
-	{
-		entityIterator->Draw(context, vsConstantBuffer, camera.get());
-		entityIterator++;
-	}
-
-	// Present the back buffer to the user
-	//  - Puts the final frame we're drawing into the window so the user can see it
-	//  - Do this exactly ONCE PER FRAME (always at the very end of the frame)
-	swapChain->Present(0, 0);
-
-	// Due to the usage of a more sophisticated swap chain,
-	// the render target must be re-bound after every call to Present()
-	context->OMSetRenderTargets(1, backBufferRTV.GetAddressOf(), depthStencilView.Get());
+    // Due to the usage of a more sophisticated swap chain,
+    // the render target must be re-bound after every call to Present()
+    context->OMSetRenderTargets(1, backBufferRTV.GetAddressOf(), depthStencilView.Get());
 }
 
 
@@ -342,60 +351,60 @@ void Game::Draw(float deltaTime, float totalTime)
 // after assignment 1. xOffset has a default val of 0.75f
 void Game::GenerateCircle(float radius, int subdivisions, XMFLOAT4 color, float xOffset)
 {
-	Vertex center = { XMFLOAT3(0.0f + xOffset, 0.0f, 0.0f), color };
+    Vertex center = { XMFLOAT3(0.0f + xOffset, 0.0f, 0.0f), color };
 
-	// get the angle per subdivision and convert to radians
-	float fRadsPerSubdiv = (360.0f / subdivisions) * 3.1415926535897932384f / 180;
+    // get the angle per subdivision and convert to radians
+    float fRadsPerSubdiv = (360.0f / subdivisions) * 3.1415926535897932384f / 180;
 
-	// each subdivision constitutes one new outer vertex, except the
-	// last tri in which the last and first vertices are re-used. this 
-	// std::vector will hold all outer vertices so they can be reused.
-	// The center vertex will be inserted at index 0 after all verts have been created.
-	std::vector<Vertex> outerVertices;
-	std::vector<unsigned int> indices;
+    // each subdivision constitutes one new outer vertex, except the
+    // last tri in which the last and first vertices are re-used. this 
+    // std::vector will hold all outer vertices so they can be reused.
+    // The center vertex will be inserted at index 0 after all verts have been created.
+    std::vector<Vertex> outerVertices;
+    std::vector<unsigned int> indices;
 
-	// make first vertex manually, starting at an angle of 0
-	outerVertices.push_back({ XMFLOAT3(std::cosf(0) * radius + xOffset, std::sinf(0) * radius, 0.0f), color });
+    // make first vertex manually, starting at an angle of 0
+    outerVertices.push_back({ XMFLOAT3(std::cosf(0) * radius + xOffset, std::sinf(0) * radius, 0.0f), color });
 
-	for (int i = 0; i < subdivisions; i++)
-	{
-		// include previous outer vertex in this tri
-		Vertex prevVert = outerVertices[i];
+    for (int i = 0; i < subdivisions; i++)
+    {
+        // include previous outer vertex in this tri
+        Vertex prevVert = outerVertices[i];
 
-		// number of the next vertex, with the first being 0, and the subsequent being 1...(a_nSubdivisions - 1)
-		int nextVert = (i + 1) % subdivisions;
-		// If we're back to the first vertex...
-		if (nextVert == 0)
-		{
-			// add the tri and exit for loop
-			indices.push_back(0);
-			indices.push_back(i);
-			// -1 for now will represent the center
-			indices.push_back(-1);
-			break;
-		}
-		else
-		{
-			// create new outer vertex based on the vertex's number
-			Vertex newVert = { XMFLOAT3(std::cosf(nextVert * fRadsPerSubdiv) * radius + xOffset, std::sinf(nextVert * fRadsPerSubdiv) * radius, 0.0f), color };
+        // number of the next vertex, with the first being 0, and the subsequent being 1...(a_nSubdivisions - 1)
+        int nextVert = (i + 1) % subdivisions;
+        // If we're back to the first vertex...
+        if (nextVert == 0)
+        {
+            // add the tri and exit for loop
+            indices.push_back(0);
+            indices.push_back(i);
+            // -1 for now will represent the center
+            indices.push_back(-1);
+            break;
+        }
+        else
+        {
+            // create new outer vertex based on the vertex's number
+            Vertex newVert = { XMFLOAT3(std::cosf(nextVert * fRadsPerSubdiv) * radius + xOffset, std::sinf(nextVert * fRadsPerSubdiv) * radius, 0.0f), color };
 
-			// add the tri and push the newly made vertex onto the 
-			// list of outer vertices to be used for the next tri
-			indices.push_back(-1);
-			indices.push_back(i + 1);
-			indices.push_back(i);
+            // add the tri and push the newly made vertex onto the 
+            // list of outer vertices to be used for the next tri
+            indices.push_back(-1);
+            indices.push_back(i + 1);
+            indices.push_back(i);
 
-			outerVertices.push_back(newVert);
-		}
-	}
+            outerVertices.push_back(newVert);
+        }
+    }
 
-	// insert the center, offset all indices by 1 to account for this
-	outerVertices.insert(outerVertices.begin(), center);
-	for (int i = 0; i < indices.size(); i++)
-	{
-		indices[i] += 1;
-	}
+    // insert the center, offset all indices by 1 to account for this
+    outerVertices.insert(outerVertices.begin(), center);
+    for (int i = 0; i < indices.size(); i++)
+    {
+        indices[i] += 1;
+    }
 
-	// assign the circle mesh with these verts/indices
-	circle = std::shared_ptr<Mesh>(new Mesh(&outerVertices[0], (int)outerVertices.size(), &indices[0], (int)indices.size(), device, context));
+    // assign the circle mesh with these verts/indices
+    circle = std::shared_ptr<Mesh>(new Mesh(&outerVertices[0], (int)outerVertices.size(), &indices[0], (int)indices.size(), device, context));
 }
