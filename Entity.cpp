@@ -1,5 +1,4 @@
 #include "Entity.h"
-#include "BufferStructs.h"
 
 using namespace DirectX;
 
@@ -27,36 +26,27 @@ Transform* Entity::GetTransform()
 }
 
 // Draws this Entity using its mesh and transform
-void Entity::Draw(
-	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context,
-	Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer,
-	Camera* camera)
+void Entity::Draw(Camera* camera, float totalTime)
 {
 	// Set the vertex and pixel shaders to use for the next Draw() command
 	//  - These don't technically need to be set every frame
 	//  - Once you start applying different shaders to different objects,
 	//    you'll need to swap the current shaders before each draw
-	context->VSSetShader(material->GetVertexShader().Get(), 0, 0);
-	context->PSSetShader(material->GetPixelShader().Get(), 0, 0);
+	SimpleVertexShader* vs = material->GetVertexShader();
+	SimplePixelShader* ps = material->GetPixelShader();
 
-	// Set cbuffer data
-	VertexShaderExternalData vsData;
-	//vsData.colorTint = XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f);
-	vsData.colorTint = *material->GetColorTint();
-	vsData.worldMatrix = transform.GetWorldMatrix();
-	vsData.viewMatrix = camera->GetView();
-	vsData.projectionMatrix = camera->GetProjection();
+	// Set vertex shader data
+	vs->SetShader();
+	vs->SetMatrix4x4("worldMat", transform.GetWorldMatrix());
+	vs->SetMatrix4x4("viewMat", camera->GetView());
+	vs->SetMatrix4x4("projectionMat", camera->GetProjection());
+	vs->CopyAllBufferData();
 
-	// Copy cbuffer data to the resource
-	D3D11_MAPPED_SUBRESOURCE mappedBuffer = {};
-	context->Map(vsConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedBuffer);
-	memcpy(mappedBuffer.pData, &vsData, sizeof(vsData));
-	context->Unmap(vsConstantBuffer.Get(), 0);
-	// Bind cbuffer
-	context->VSSetConstantBuffers(
-		0, // Which slot/register to bind the buffer to?
-		1, // How many are we activating?
-		vsConstantBuffer.GetAddressOf());
+	// Set pixel shader data
+	ps->SetShader();
+	ps->SetFloat4("colorTint", *material->GetColorTint());
+	ps->SetFloat("totalTime", totalTime);
+	ps->CopyAllBufferData();
 
 	mesh->Draw();
 }

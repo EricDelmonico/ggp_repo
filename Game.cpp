@@ -7,7 +7,6 @@
 // Needed for a helper function to read compiled shader files from the hard drive
 #pragma comment(lib, "d3dcompiler.lib")
 #include <d3dcompiler.h>
-#include "BufferStructs.h"
 
 // For the DirectX Math library
 using namespace DirectX;
@@ -70,16 +69,6 @@ void Game::Init()
     // Essentially: "What kind of shape should the GPU draw with our data?"
     context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    // Set up the vertex shader cbuffer for Assignment 3
-    unsigned int size = sizeof(VertexShaderExternalData);
-    size = (size + 15) / 16 * 16;
-    D3D11_BUFFER_DESC cbDesc = {};
-    cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    cbDesc.ByteWidth = size; // Size to the nearest multiple of 16 ceiling
-    cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-    cbDesc.Usage = D3D11_USAGE_DYNAMIC;
-    device->CreateBuffer(&cbDesc, 0, vsConstantBuffer.GetAddressOf());
-
     // Camera once we have aspect ratio available
     camera = std::shared_ptr<Camera>(new Camera(0, 0, -5, 5.0f, 0.5f, XM_PIDIV2, (float)width / height));
 }
@@ -94,65 +83,12 @@ void Game::Init()
 // --------------------------------------------------------
 void Game::LoadShaders()
 {
-    // Blob for reading raw data
-    // - This is a simplified way of handling raw data
-    ID3DBlob* shaderBlob;
-
-    // Read our compiled vertex shader code into a blob
-    // - Essentially just "open the file and plop its contents here"
-    D3DReadFileToBlob(
-        GetFullPathTo_Wide(L"VertexShader.cso").c_str(), // Using a custom helper for file paths
-        &shaderBlob);
-
-    // Create a vertex shader from the information we
-    // have read into the blob above
-    // - A blob can give a pointer to its contents, and knows its own size
-    device->CreateVertexShader(
-        shaderBlob->GetBufferPointer(), // Get a pointer to the blob's contents
-        shaderBlob->GetBufferSize(),	// How big is that data?
-        0,								// No classes in this shader
-        vertexShader.GetAddressOf());	// The address of the ID3D11VertexShader*
-
-
-    // Create an input layout that describes the vertex format
-    // used by the vertex shader we're using
-    //  - This is used by the pipeline to know how to interpret the raw data
-    //     sitting inside a vertex buffer
-    //  - Doing this NOW because it requires a vertex shader's byte code to verify against!
-    //  - Luckily, we already have that loaded (the blob above)
-    D3D11_INPUT_ELEMENT_DESC inputElements[2] = {};
-
-    // Set up the first element - a position, which is 3 float values
-    inputElements[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;				// Most formats are described as color channels; really it just means "Three 32-bit floats"
-    inputElements[0].SemanticName = "POSITION";							// This is "POSITION" - needs to match the semantics in our vertex shader input!
-    inputElements[0].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;	// How far into the vertex is this?  Assume it's after the previous element
-
-    // Set up the second element - a color, which is 4 more float values
-    inputElements[1].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;			// 4x 32-bit floats
-    inputElements[1].SemanticName = "COLOR";							// Match our vertex shader input!
-    inputElements[1].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;	// After the previous element
-
-    // Create the input layout, verifying our description against actual shader code
-    device->CreateInputLayout(
-        inputElements,					// An array of descriptions
-        2,								// How many elements in that array
-        shaderBlob->GetBufferPointer(),	// Pointer to the code of a shader that uses this layout
-        shaderBlob->GetBufferSize(),	// Size of the shader code that uses this layout
-        inputLayout.GetAddressOf());	// Address of the resulting ID3D11InputLayout*
-
-
-
-    // Read and create the pixel shader
-    //  - Reusing the same blob here, since we're done with the vert shader code
-    D3DReadFileToBlob(
-        GetFullPathTo_Wide(L"PixelShader.cso").c_str(), // Using a custom helper for file paths
-        &shaderBlob);
-
-    device->CreatePixelShader(
-        shaderBlob->GetBufferPointer(),
-        shaderBlob->GetBufferSize(),
-        0,
-        pixelShader.GetAddressOf());
+    vertexShader = std::shared_ptr<SimpleVertexShader>(
+        new SimpleVertexShader(device.Get(), context.Get(), GetFullPathTo_Wide(L"VertexShader.cso").c_str())); 
+    pixelShader = std::shared_ptr<SimplePixelShader>(
+        new SimplePixelShader(device.Get(), context.Get(), GetFullPathTo_Wide(L"PixelShader.cso").c_str()));
+    customPixelShader = std::shared_ptr<SimplePixelShader>(
+        new SimplePixelShader(device.Get(), context.Get(), GetFullPathTo_Wide(L"CustomPS.cso").c_str()));
 }
 
 
@@ -183,9 +119,9 @@ void Game::CreateBasicGeometry()
     //    since we're describing the triangle in terms of the window itself
     Vertex verticesTri[] =
     {
-        { XMFLOAT3(+0.0f, +0.5f, +0.0f), white },
-        { XMFLOAT3(+0.5f, -0.5f, +0.0f), white },
-        { XMFLOAT3(-0.5f, -0.5f, +0.1f), white },
+        { XMFLOAT3(+0.0f, +0.5f, +0.0f), XMFLOAT3(0, 0, -1), XMFLOAT2(0, 0) },
+        { XMFLOAT3(+0.5f, -0.5f, +0.0f), XMFLOAT3(0, 0, -1), XMFLOAT2(0, 0) },
+        { XMFLOAT3(-0.5f, -0.5f, +0.1f), XMFLOAT3(0, 0, -1), XMFLOAT2(0, 0) }
     };
 
     // Set up the indices, which tell us which vertices to use and in which order
@@ -198,12 +134,12 @@ void Game::CreateBasicGeometry()
     // Set up vertices for a pentagon
     Vertex verticesPent[] =
     {
-        { XMFLOAT3(+0.00f, +0.5f, +0.0f) , white },
-        { XMFLOAT3(-0.50f, +0.0f, +0.0f) , white },
-        { XMFLOAT3(-0.25f, -0.5f, +0.0f) , white },
-        { XMFLOAT3(+0.25f, -0.5f, +0.0f) , white },
-        { XMFLOAT3(+0.50f, +0.0f, +0.0f) , white },
-        { XMFLOAT3(+0.00f, +0.0f, +0.0f) , white }
+        { XMFLOAT3(+0.00f, +0.5f, +0.0f), XMFLOAT3(0, 0, -1), XMFLOAT2(0, 0) },
+        { XMFLOAT3(-0.50f, +0.0f, +0.0f), XMFLOAT3(0, 0, -1), XMFLOAT2(0, 0) },
+        { XMFLOAT3(-0.25f, -0.5f, +0.0f), XMFLOAT3(0, 0, -1), XMFLOAT2(0, 0) },
+        { XMFLOAT3(+0.25f, -0.5f, +0.0f), XMFLOAT3(0, 0, -1), XMFLOAT2(0, 0) },
+        { XMFLOAT3(+0.50f, +0.0f, +0.0f), XMFLOAT3(0, 0, -1), XMFLOAT2(0, 0) },
+        { XMFLOAT3(+0.00f, +0.0f, +0.0f), XMFLOAT3(0, 0, -1), XMFLOAT2(0, 0) }
     };
 
     // Set up the tris for a pentagon
@@ -219,42 +155,29 @@ void Game::CreateBasicGeometry()
         white,          // color
         0);             // x offset
 
-    // Make some materials.
-    // Reddish tint
-    materials.push_back(std::shared_ptr<Material>(
-        new Material(XMFLOAT4(1, 0.2f, 0.2f, 1), pixelShader, vertexShader)));
-    // Greenish tint
-    materials.push_back(std::shared_ptr<Material>(
-        new Material(XMFLOAT4(0.2f, 1, 0.2f, 1), pixelShader, vertexShader)));
-    // Blueish tint
-    materials.push_back(std::shared_ptr<Material>(
-        new Material(XMFLOAT4(0.2f, 0.2f, 1, 1), pixelShader, vertexShader)));
-    // Yellowish tint
-    materials.push_back(std::shared_ptr<Material>(
-        new Material(XMFLOAT4(1, 1, 0.2f, 1), pixelShader, vertexShader)));
-    // Purpleish tint
-    materials.push_back(std::shared_ptr<Material>(
-        new Material(XMFLOAT4(1, 0.2f, 1, 1), pixelShader, vertexShader)));
+    std::shared_ptr<Mesh> cube = std::shared_ptr<Mesh>(new Mesh(GetFullPathTo("../../Assets/Models/cube.obj").c_str(), device, context));
+    std::shared_ptr<Mesh> cylinder = std::shared_ptr<Mesh>(new Mesh(GetFullPathTo("../../Assets/Models/cylinder.obj").c_str(), device, context));
+    std::shared_ptr<Mesh> helix = std::shared_ptr<Mesh>(new Mesh(GetFullPathTo("../../Assets/Models/helix.obj").c_str(), device, context));
+    std::shared_ptr<Mesh> quad = std::shared_ptr<Mesh>(new Mesh(GetFullPathTo("../../Assets/Models/quad.obj").c_str(), device, context));
+    std::shared_ptr<Mesh> quad_double_sided = std::shared_ptr<Mesh>(new Mesh(GetFullPathTo("../../Assets/Models/quad_double_sided.obj").c_str(), device, context));
+    std::shared_ptr<Mesh> sphere = std::shared_ptr<Mesh>(new Mesh(GetFullPathTo("../../Assets/Models/sphere.obj").c_str(), device, context));
+    std::shared_ptr<Mesh> torus = std::shared_ptr<Mesh>(new Mesh(GetFullPathTo("../../Assets/Models/torus.obj").c_str(), device, context));
+
+    std::shared_ptr<Material> whiteMaterial = std::shared_ptr<Material>(new Material(white, customPixelShader, vertexShader));
 
     // Assign geometry and materials to some entities
-    entities.push_back(Entity(pent, materials[0]));
-    entities.push_back(Entity(tri, materials[1]));
-    entities.push_back(Entity(circle, materials[2]));
-    entities.push_back(Entity(pent, materials[3]));
-    entities.push_back(Entity(circle, materials[4]));
+    entities.push_back(Entity(cube, whiteMaterial));
+    entities.push_back(Entity(cylinder, whiteMaterial));
+    entities.push_back(Entity(helix, whiteMaterial));
+    entities.push_back(Entity(quad, whiteMaterial));
+    entities.push_back(Entity(quad_double_sided, whiteMaterial));
+    entities.push_back(Entity(sphere, whiteMaterial));
+    entities.push_back(Entity(torus, whiteMaterial));
 
-    // Offset entites so they're not all inside each other at the center of the screen
-    entities[0].GetTransform()->MoveAbsolute(0.6f, 0, 0);
-    entities[2].GetTransform()->MoveAbsolute(-0.6f, 0, 0);
-    entities[3].GetTransform()->MoveAbsolute(0, -0.6f, 0);
-    entities[4].GetTransform()->MoveAbsolute(-0, 0.6f, 0);
-
-    // Move entities forward a bit so their z's are between 0 and 1 even when rotated
-    auto entityIterator = entities.begin();
-    while (entityIterator < entities.end())
+    // Move entities so they're lined up nicely
+    for (int i = 0; i < entities.size(); i++)
     {
-        entityIterator->GetTransform()->MoveAbsolute(0, 0, 0.5f);
-        entityIterator++;
+        entities[i].GetTransform()->SetPosition((i - 3) * 3, 0, 0);
     }
 }
 
@@ -286,14 +209,11 @@ void Game::Update(float deltaTime, float totalTime)
         Quit();
 
     // Move/scale/rotate entities every frame
-    auto entityIterator = entities.begin();
-    while (entityIterator < entities.end())
+    for (auto& e : entities)
     {
-        auto transform = entityIterator->GetTransform();
-        transform->SetScale(0.125f * std::sin(totalTime) + 0.25f, 0.125f * std::sin(totalTime) + 0.25f, 0);
+        auto transform = e.GetTransform();
         transform->MoveAbsolute(0, std::sin(totalTime) / 5 * deltaTime, 0);
         transform->Rotate(1.0f * deltaTime, 1.0f * deltaTime, 0);
-        entityIterator++;
     }
 
     // Update the camera every frame
@@ -324,16 +244,9 @@ void Game::Draw(float deltaTime, float totalTime)
         1.0f,
         0);
 
-    // Ensure the pipeline knows how to interpret the data (numbers)
-    // from the vertex buffer.  
-    // - If all of your 3D models use the exact same vertex layout,
-    //    this could simply be done once in Init()
-    // - However, this isn't always the case (but might be for this course)
-    context->IASetInputLayout(inputLayout.Get());
-
     // Draw entities
     for (auto& e : entities)
-        e.Draw(context, vsConstantBuffer, camera.get());
+        e.Draw(camera.get(), totalTime);
 
     // Present the back buffer to the user
     //  - Puts the final frame we're drawing into the window so the user can see it
@@ -351,7 +264,7 @@ void Game::Draw(float deltaTime, float totalTime)
 // after assignment 1. xOffset has a default val of 0.75f
 void Game::GenerateCircle(float radius, int subdivisions, XMFLOAT4 color, float xOffset)
 {
-    Vertex center = { XMFLOAT3(0.0f + xOffset, 0.0f, 0.0f), color };
+    Vertex center = { XMFLOAT3(0.0f + xOffset, 0.0f, 0.0f), XMFLOAT3(0, 0, -1), XMFLOAT2(0, 0) };
 
     // get the angle per subdivision and convert to radians
     float fRadsPerSubdiv = (360.0f / subdivisions) * 3.1415926535897932384f / 180;
@@ -364,7 +277,7 @@ void Game::GenerateCircle(float radius, int subdivisions, XMFLOAT4 color, float 
     std::vector<unsigned int> indices;
 
     // make first vertex manually, starting at an angle of 0
-    outerVertices.push_back({ XMFLOAT3(std::cosf(0) * radius + xOffset, std::sinf(0) * radius, 0.0f), color });
+    outerVertices.push_back({ XMFLOAT3(std::cosf(0) * radius + xOffset, std::sinf(0) * radius, 0.0f), XMFLOAT3(0, 0, -1), XMFLOAT2(0, 0) });
 
     for (int i = 0; i < subdivisions; i++)
     {
@@ -386,7 +299,10 @@ void Game::GenerateCircle(float radius, int subdivisions, XMFLOAT4 color, float 
         else
         {
             // create new outer vertex based on the vertex's number
-            Vertex newVert = { XMFLOAT3(std::cosf(nextVert * fRadsPerSubdiv) * radius + xOffset, std::sinf(nextVert * fRadsPerSubdiv) * radius, 0.0f), color };
+            Vertex newVert = { 
+                XMFLOAT3(std::cosf(nextVert * fRadsPerSubdiv) * radius + xOffset, std::sinf(nextVert * fRadsPerSubdiv) * radius, 0.0f), 
+                XMFLOAT3(0, 0, -1), 
+                XMFLOAT2(0, 0) };
 
             // add the tri and push the newly made vertex onto the 
             // list of outer vertices to be used for the next tri

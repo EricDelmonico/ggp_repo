@@ -16,6 +16,12 @@ public:
         Microsoft::WRL::ComPtr<ID3D11Device> _device, 
         Microsoft::WRL::ComPtr<ID3D11DeviceContext> _deviceContext);
 
+    // Accepts an obj file name and creates a mesh from the file
+    Mesh(
+        const char* objFile,
+        Microsoft::WRL::ComPtr<ID3D11Device> _device, 
+        Microsoft::WRL::ComPtr<ID3D11DeviceContext> _deviceContext);
+
     ~Mesh();
 
     // Methods to retrieve the otherwise private vertex buffer, index buffer, and index count
@@ -31,5 +37,13 @@ private:
     Microsoft::WRL::ComPtr<ID3D11Buffer> indexBuffer;
     int numIndices;
     Microsoft::WRL::ComPtr<ID3D11DeviceContext> deviceContext;
+
+    void InitializeBuffers(
+        Vertex* _vertices,
+        int _numVerts,
+        unsigned int* _indices,
+        int _numIndices,
+        Microsoft::WRL::ComPtr<ID3D11Device> _device,
+        Microsoft::WRL::ComPtr<ID3D11DeviceContext> _deviceContext);
 };
 

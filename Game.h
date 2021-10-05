@@ -38,19 +38,16 @@ private:
 	//  - More info here: https://github.com/Microsoft/DirectXTK/wiki/ComPtr
 	
 	// Shaders and shader-related constructs
-	Microsoft::WRL::ComPtr<ID3D11PixelShader> pixelShader;
-	Microsoft::WRL::ComPtr<ID3D11VertexShader> vertexShader;
-	Microsoft::WRL::ComPtr<ID3D11InputLayout> inputLayout;
+	std::shared_ptr<SimplePixelShader> pixelShader;
+	std::shared_ptr<SimplePixelShader> customPixelShader;
+	std::shared_ptr<SimpleVertexShader> vertexShader;
 
 	std::shared_ptr<Mesh> tri;
 	std::shared_ptr<Mesh> pent;
 	std::shared_ptr<Mesh> circle;
 
 	std::vector<Entity> entities;
-	std::vector<std::shared_ptr<Material>> materials;
 
 	std::shared_ptr<Camera> camera;
-
-	Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer;
 };
 
