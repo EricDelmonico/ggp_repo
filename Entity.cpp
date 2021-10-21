@@ -25,6 +25,11 @@ Transform* Entity::GetTransform()
     return &transform;
 }
 
+Material* Entity::GetMaterial()
+{
+	return material.get();
+}
+
 // Draws this Entity using its mesh and transform
 void Entity::Draw(Camera* camera, float totalTime)
 {
@@ -37,15 +42,18 @@ void Entity::Draw(Camera* camera, float totalTime)
 
 	// Set vertex shader data
 	vs->SetShader();
-	vs->SetMatrix4x4("worldMat", transform.GetWorldMatrix());
-	vs->SetMatrix4x4("viewMat", camera->GetView());
-	vs->SetMatrix4x4("projectionMat", camera->GetProjection());
+	vs->SetMatrix4x4("world", transform.GetWorldMatrix());
+	vs->SetMatrix4x4("worldInvTranspose", transform.GetWorldInverseTransposeMatrix());
+	vs->SetMatrix4x4("view", camera->GetView());
+	vs->SetMatrix4x4("projection", camera->GetProjection());
 	vs->CopyAllBufferData();
 
 	// Set pixel shader data
 	ps->SetShader();
 	ps->SetFloat4("colorTint", *material->GetColorTint());
 	ps->SetFloat("totalTime", totalTime);
+	ps->SetFloat3("cameraPos", camera->GetTransform()->GetPosition());
+	ps->SetFloat("roughness", material->GetRoughness());
 	ps->CopyAllBufferData();
 
 	mesh->Draw();

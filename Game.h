@@ -9,6 +9,7 @@
 #include "Material.h"
 #include <memory>
 #include <vector>
+#include "Lights.h"
 
 class Game 
 	: public DXCore
@@ -42,12 +43,18 @@ private:
 	std::shared_ptr<SimplePixelShader> customPixelShader;
 	std::shared_ptr<SimpleVertexShader> vertexShader;
 
+	// Some sample meshes
 	std::shared_ptr<Mesh> tri;
 	std::shared_ptr<Mesh> pent;
 	std::shared_ptr<Mesh> circle;
 
+	// All the entities that will be drawn
 	std::vector<Entity> entities;
 
 	std::shared_ptr<Camera> camera;
-};
 
+	// Lights
+	std::vector<Light> lights;
+
+	bool moveEntities = false;
+};

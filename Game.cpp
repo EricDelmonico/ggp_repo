@@ -70,7 +70,58 @@ void Game::Init()
     context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     // Camera once we have aspect ratio available
-    camera = std::shared_ptr<Camera>(new Camera(0, 0, -5, 5.0f, 0.5f, XM_PIDIV2, (float)width / height));
+    camera = std::shared_ptr<Camera>(
+        new Camera(
+            0,                          // x
+            0,                          // y
+            -20,                        // z
+            5.0f,                       // Move speed
+            0.5f,                       // Look speed  
+            XM_PIDIV4,                  // FOV
+            (float)width / height));    // Aspect
+
+    // Initialize Lights
+
+    // Directional lights
+    Light directionalLight1 = 
+        Light(
+            { 1, 0, 0 },    // Direction
+            { 1, 0, 0 },    // Color
+            1.0f);          // Intensity
+
+    Light directionalLight2 = 
+        Light(
+            { 0, -1, 0 },    // Direction
+            { 0, 1, 0 },    // Color
+            1.0f);          // Intensity
+
+    Light directionalLight3 = 
+        Light(
+            { -1, 1, -0.5f },   // Direction
+            { 0, 0, 1 },        // Color
+            1.0f);              // Intensity
+
+    // Point lights
+    Light pointLight1 = 
+        Light(
+            { -1.5f, 0, 0 },    // Position
+            { 1, 1, 1 },        // Color
+            10,                 // Range
+            1.0f);              // Intensity
+
+    Light pointLight2 = 
+        Light(
+            { 1.5f, 0, 0 }, // Position
+            { 1, 1, 1 },    // Color
+            10,             // Range
+            0.5f);          // Intensity
+
+    // Push all the lights
+    lights.push_back(directionalLight1);
+    lights.push_back(directionalLight2);
+    lights.push_back(directionalLight3);
+    lights.push_back(pointLight1);
+    lights.push_back(pointLight2);
 }
 
 // --------------------------------------------------------
@@ -84,7 +135,7 @@ void Game::Init()
 void Game::LoadShaders()
 {
     vertexShader = std::shared_ptr<SimpleVertexShader>(
-        new SimpleVertexShader(device.Get(), context.Get(), GetFullPathTo_Wide(L"VertexShader.cso").c_str())); 
+        new SimpleVertexShader(device.Get(), context.Get(), GetFullPathTo_Wide(L"VertexShader.cso").c_str()));
     pixelShader = std::shared_ptr<SimplePixelShader>(
         new SimplePixelShader(device.Get(), context.Get(), GetFullPathTo_Wide(L"PixelShader.cso").c_str()));
     customPixelShader = std::shared_ptr<SimplePixelShader>(
@@ -163,16 +214,17 @@ void Game::CreateBasicGeometry()
     std::shared_ptr<Mesh> sphere = std::shared_ptr<Mesh>(new Mesh(GetFullPathTo("../../Assets/Models/sphere.obj").c_str(), device, context));
     std::shared_ptr<Mesh> torus = std::shared_ptr<Mesh>(new Mesh(GetFullPathTo("../../Assets/Models/torus.obj").c_str(), device, context));
 
-    std::shared_ptr<Material> whiteMaterial = std::shared_ptr<Material>(new Material(white, customPixelShader, vertexShader));
+    std::shared_ptr<Material> whiteMaterial =
+        std::shared_ptr<Material>(new Material(white, 0.0f, pixelShader, vertexShader));
 
     // Assign geometry and materials to some entities
     entities.push_back(Entity(cube, whiteMaterial));
     entities.push_back(Entity(cylinder, whiteMaterial));
     entities.push_back(Entity(helix, whiteMaterial));
-    entities.push_back(Entity(quad, whiteMaterial));
-    entities.push_back(Entity(quad_double_sided, whiteMaterial));
     entities.push_back(Entity(sphere, whiteMaterial));
     entities.push_back(Entity(torus, whiteMaterial));
+    entities.push_back(Entity(quad, whiteMaterial));
+    entities.push_back(Entity(quad_double_sided, whiteMaterial));
 
     // Move entities so they're lined up nicely
     for (int i = 0; i < entities.size(); i++)
@@ -209,11 +261,14 @@ void Game::Update(float deltaTime, float totalTime)
         Quit();
 
     // Move/scale/rotate entities every frame
-    for (auto& e : entities)
+    if (moveEntities)
     {
-        auto transform = e.GetTransform();
-        transform->MoveAbsolute(0, std::sin(totalTime) / 5 * deltaTime, 0);
-        transform->Rotate(1.0f * deltaTime, 1.0f * deltaTime, 0);
+        for (auto& e : entities)
+        {
+            auto transform = e.GetTransform();
+            transform->MoveAbsolute(0, std::sin(totalTime) / 5 * deltaTime, 0);
+            transform->Rotate(1.0f * deltaTime, 1.0f * deltaTime, 0);
+        }
     }
 
     // Update the camera every frame
@@ -223,6 +278,7 @@ void Game::Update(float deltaTime, float totalTime)
     float fov = camera->GetFoV();
     if (Input::GetInstance().KeyDown('O')) fov += 1.0f * deltaTime;
     if (Input::GetInstance().KeyDown('P')) fov -= 1.0f * deltaTime;
+    if (Input::GetInstance().KeyPress('M')) moveEntities = !moveEntities;
     camera->SetFoV(fov);
 }
 
@@ -245,8 +301,19 @@ void Game::Draw(float deltaTime, float totalTime)
         0);
 
     // Draw entities
+    XMFLOAT3 ambientColor = XMFLOAT3(.1f, .1f, .25f);
     for (auto& e : entities)
+    {
+        auto pixelShader = e.GetMaterial()->GetPixelShader();
+        pixelShader->SetFloat3("ambient", ambientColor);
+        // Set lights
+        pixelShader->SetData(
+            "lights",                               // Name of the variable in the shader 
+            &lights[0],                             // Address of the data to set the shader variable to
+            sizeof(Light) * (int)lights.size());    // The size of the data to set
+
         e.Draw(camera.get(), totalTime);
+    }
 
     // Present the back buffer to the user
     //  - Puts the final frame we're drawing into the window so the user can see it
@@ -299,9 +366,9 @@ void Game::GenerateCircle(float radius, int subdivisions, XMFLOAT4 color, float 
         else
         {
             // create new outer vertex based on the vertex's number
-            Vertex newVert = { 
-                XMFLOAT3(std::cosf(nextVert * fRadsPerSubdiv) * radius + xOffset, std::sinf(nextVert * fRadsPerSubdiv) * radius, 0.0f), 
-                XMFLOAT3(0, 0, -1), 
+            Vertex newVert = {
+                XMFLOAT3(std::cosf(nextVert * fRadsPerSubdiv) * radius + xOffset, std::sinf(nextVert * fRadsPerSubdiv) * radius, 0.0f),
+                XMFLOAT3(0, 0, -1),
                 XMFLOAT2(0, 0) };
 
             // add the tri and push the newly made vertex onto the 
