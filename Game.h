@@ -31,6 +31,8 @@ private:
 	// Initialization helper methods - feel free to customize, combine, etc.
 	void LoadShaders(); 
 	void CreateBasicGeometry();
+	void CreateSampleLights();
+	void CreateMaterials();
 	void GenerateCircle(float radius, int subdivisions, DirectX::XMFLOAT4 color, float xOffset);
 	
 	// Note the usage of ComPtr below
@@ -56,5 +58,14 @@ private:
 	// Lights
 	std::vector<Light> lights;
 
+	// Materials
+	std::shared_ptr<Material> ornateIron;
+	std::shared_ptr<Material> jute;
+	std::shared_ptr<Material> mud;
+	std::shared_ptr<Material> onyx;
+	std::shared_ptr<Material> brick;
+
 	bool moveEntities = false;
+	bool offsetUvs = false;
+	bool scaleUvs = false;
 };

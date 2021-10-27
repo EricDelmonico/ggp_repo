@@ -87,7 +87,8 @@ float3 DirectionalLight(
 	VertexToPixel input, 
 	float3 cameraPos,
 	float roughness,
-	float surfaceColor)
+	float surfaceColor,
+	float specMapValue)
 {
 	float3 dirToLight = normalize(-light.Direction);
 	float diffuse = Diffuse(input.normal, dirToLight, light.Intensity);
@@ -98,7 +99,7 @@ float3 DirectionalLight(
 			light.Direction,
 			input.normal,
 			roughness,
-			light.Intensity);
+			light.Intensity) * specMapValue;
 
 	return (diffuse + specular) * light.Color * surfaceColor;
 }
@@ -115,7 +116,8 @@ float3 PointLight(
 	VertexToPixel input,
 	float3 cameraPos,
 	float3 roughness,
-	float3 surfaceColor)
+	float3 surfaceColor,
+	float specMapValue)
 {
 	float3 dirToLight = normalize(light.Position - input.worldPosition);
 	float diffuse = Diffuse(input.normal, dirToLight, light.Intensity);
@@ -126,7 +128,7 @@ float3 PointLight(
 			-dirToLight,
 			input.normal,
 			roughness,
-			light.Intensity);
+			light.Intensity) * specMapValue;
 
 	float3 lightResult = (diffuse + specular) * light.Color * surfaceColor;
 	float attenuation = Attenuate(light, input.worldPosition);

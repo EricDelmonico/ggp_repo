@@ -3,6 +3,7 @@
 #include "Input.h"
 #include <vector>
 #include <cmath>
+#include <WICTextureLoader.h>
 
 // Needed for a helper function to read compiled shader files from the hard drive
 #pragma comment(lib, "d3dcompiler.lib")
@@ -62,6 +63,7 @@ void Game::Init()
     // geometry to draw and some simple camera matrices.
     //  - You'll be expanding and/or replacing these later
     LoadShaders();
+    CreateMaterials();
     CreateBasicGeometry();
 
     // Tell the input assembler stage of the pipeline what kind of
@@ -80,36 +82,41 @@ void Game::Init()
             XM_PIDIV4,                  // FOV
             (float)width / height));    // Aspect
 
+    CreateSampleLights();
+}
+
+void Game::CreateSampleLights()
+{
     // Initialize Lights
 
     // Directional lights
-    Light directionalLight1 = 
+    Light directionalLight1 =
         Light(
             { 1, 0, 0 },    // Direction
             { 1, 0, 0 },    // Color
             1.0f);          // Intensity
 
-    Light directionalLight2 = 
+    Light directionalLight2 =
         Light(
             { 0, -1, 0 },    // Direction
             { 0, 1, 0 },    // Color
             1.0f);          // Intensity
 
-    Light directionalLight3 = 
+    Light directionalLight3 =
         Light(
             { -1, 1, -0.5f },   // Direction
             { 0, 0, 1 },        // Color
             1.0f);              // Intensity
 
     // Point lights
-    Light pointLight1 = 
+    Light pointLight1 =
         Light(
             { -1.5f, 0, 0 },    // Position
             { 1, 1, 1 },        // Color
             10,                 // Range
             1.0f);              // Intensity
 
-    Light pointLight2 = 
+    Light pointLight2 =
         Light(
             { 1.5f, 0, 0 }, // Position
             { 1, 1, 1 },    // Color
@@ -124,6 +131,83 @@ void Game::Init()
     lights.push_back(pointLight2);
 }
 
+void Game::CreateMaterials()
+{
+    // Ornate iron
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ornateIronAlbedoSRV;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ornateIronSpecularSRV;
+    CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/OrnateIron/TexturesCom_FloorIronOrnate_1K_albedo.tif").c_str(), nullptr, ornateIronAlbedoSRV.GetAddressOf());
+    CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/OrnateIron/TexturesCom_FloorIronOrnate_1K_roughness.tif").c_str(), nullptr, ornateIronSpecularSRV.GetAddressOf());
+
+    // Jute
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> juteAlbedoSRV;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> juteSpecularSRV;
+    CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/Jute/TexturesCom_Fabric_JuteMatting_1K_albedo.tif").c_str(), nullptr, juteAlbedoSRV.GetAddressOf());
+    CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/Jute/TexturesCom_Fabric_JuteMatting_1K_roughness.tif").c_str(), nullptr, juteSpecularSRV.GetAddressOf());
+
+    // Mud
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mudAlbedoSRV;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mudSpecularSRV;
+    CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/Mud/GroundTireTracks001_COL_4K.jpg").c_str(), nullptr, mudAlbedoSRV.GetAddressOf());
+    CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/Mud/GroundTireTracks001_SPEC_4K.jpg").c_str(), nullptr, mudSpecularSRV.GetAddressOf());
+
+    // Onyx
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> onyxAlbedoSRV;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> onyxSpecularSRV;
+    CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/Onyx/TilesOnyxOpaloBlack001_COL_4K.jpg").c_str(), nullptr, onyxAlbedoSRV.GetAddressOf());
+    CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/Onyx/TilesOnyxOpaloBlack001_GLOSS_4K.jpg").c_str(), nullptr, onyxSpecularSRV.GetAddressOf());
+
+    // Brick
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> brickAlbedoSRV;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> brickSpecularSRV;
+    CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/Brick/StoneBricksBeige015_COL_4K.jpg").c_str(), nullptr, brickAlbedoSRV.GetAddressOf());
+    CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/Brick/StoneBricksBeige015_GLOSS_4K.jpg").c_str(), nullptr, brickSpecularSRV.GetAddressOf());
+
+    // Sampler description/sampler state
+    Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState;
+    D3D11_SAMPLER_DESC samplerDesc = {};
+    samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+    samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+    samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+    samplerDesc.Filter = D3D11_FILTER_ANISOTROPIC;
+    samplerDesc.MaxAnisotropy = 16;
+    samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+    device->CreateSamplerState(&samplerDesc, samplerState.GetAddressOf());
+
+    // Create the actual materials
+    XMFLOAT4 white = { 1, 1, 1, 1 };
+
+    // Ornate iron
+    ornateIron = std::make_shared<Material>(white, 0, pixelShader, vertexShader);
+    ornateIron->AddTextureSRV("SurfaceTexture", ornateIronAlbedoSRV);
+    ornateIron->AddTextureSRV("SpecularMap", ornateIronSpecularSRV);
+    ornateIron->AddSampler("BasicSampler", samplerState);
+
+    // Jute
+    jute = std::make_shared<Material>(white, 0, pixelShader, vertexShader);
+    jute->AddTextureSRV("SurfaceTexture", juteAlbedoSRV);
+    jute->AddTextureSRV("SpecularMap", juteSpecularSRV);
+    jute->AddSampler("BasicSampler", samplerState);
+
+    // Mud
+    mud = std::make_shared<Material>(white, 0, pixelShader, vertexShader);
+    mud->AddTextureSRV("SurfaceTexture", mudAlbedoSRV);
+    mud->AddTextureSRV("SpecularMap", mudSpecularSRV);
+    mud->AddSampler("BasicSampler", samplerState);
+
+    // Onyx
+    onyx = std::make_shared<Material>(white, 0, pixelShader, vertexShader);
+    onyx->AddTextureSRV("SurfaceTexture", onyxAlbedoSRV);
+    onyx->AddTextureSRV("SpecularMap", onyxSpecularSRV);
+    onyx->AddSampler("BasicSampler", samplerState);
+
+    // Brick
+    brick = std::make_shared<Material>(white, 0, pixelShader, vertexShader);
+    brick->AddTextureSRV("SurfaceTexture", brickAlbedoSRV);
+    brick->AddTextureSRV("SpecularMap", brickSpecularSRV);
+    brick->AddSampler("BasicSampler", samplerState);
+}
+
 // --------------------------------------------------------
 // Loads shaders from compiled shader object (.cso) files
 // and also created the Input Layout that describes our 
@@ -134,12 +218,9 @@ void Game::Init()
 // --------------------------------------------------------
 void Game::LoadShaders()
 {
-    vertexShader = std::shared_ptr<SimpleVertexShader>(
-        new SimpleVertexShader(device.Get(), context.Get(), GetFullPathTo_Wide(L"VertexShader.cso").c_str()));
-    pixelShader = std::shared_ptr<SimplePixelShader>(
-        new SimplePixelShader(device.Get(), context.Get(), GetFullPathTo_Wide(L"PixelShader.cso").c_str()));
-    customPixelShader = std::shared_ptr<SimplePixelShader>(
-        new SimplePixelShader(device.Get(), context.Get(), GetFullPathTo_Wide(L"CustomPS.cso").c_str()));
+    vertexShader = std::make_shared<SimpleVertexShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"VertexShader.cso").c_str());
+    pixelShader = std::make_shared<SimplePixelShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"PixelShader.cso").c_str());
+    customPixelShader = std::make_shared<SimplePixelShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"CustomPS.cso").c_str());
 }
 
 
@@ -196,8 +277,8 @@ void Game::CreateBasicGeometry()
     // Set up the tris for a pentagon
     unsigned int indicesPent[] = { 0, 5, 1, 1, 5, 2, 5, 3, 2, 5, 4, 3, 0, 4, 5 };
 
-    tri = std::shared_ptr<Mesh>(new Mesh(verticesTri, 3, indicesTri, 3, device, context));
-    pent = std::shared_ptr<Mesh>(new Mesh(verticesPent, 6, indicesPent, 15, device, context));
+    tri = std::make_shared<Mesh>(verticesTri, 3, indicesTri, 3, device, context);
+    pent = std::make_shared<Mesh>(verticesPent, 6, indicesPent, 15, device, context);
 
     // Create a circle and assign it to the circle field
     GenerateCircle(
@@ -206,30 +287,27 @@ void Game::CreateBasicGeometry()
         white,          // color
         0);             // x offset
 
-    std::shared_ptr<Mesh> cube = std::shared_ptr<Mesh>(new Mesh(GetFullPathTo("../../Assets/Models/cube.obj").c_str(), device, context));
-    std::shared_ptr<Mesh> cylinder = std::shared_ptr<Mesh>(new Mesh(GetFullPathTo("../../Assets/Models/cylinder.obj").c_str(), device, context));
-    std::shared_ptr<Mesh> helix = std::shared_ptr<Mesh>(new Mesh(GetFullPathTo("../../Assets/Models/helix.obj").c_str(), device, context));
-    std::shared_ptr<Mesh> quad = std::shared_ptr<Mesh>(new Mesh(GetFullPathTo("../../Assets/Models/quad.obj").c_str(), device, context));
-    std::shared_ptr<Mesh> quad_double_sided = std::shared_ptr<Mesh>(new Mesh(GetFullPathTo("../../Assets/Models/quad_double_sided.obj").c_str(), device, context));
-    std::shared_ptr<Mesh> sphere = std::shared_ptr<Mesh>(new Mesh(GetFullPathTo("../../Assets/Models/sphere.obj").c_str(), device, context));
-    std::shared_ptr<Mesh> torus = std::shared_ptr<Mesh>(new Mesh(GetFullPathTo("../../Assets/Models/torus.obj").c_str(), device, context));
-
-    std::shared_ptr<Material> whiteMaterial =
-        std::shared_ptr<Material>(new Material(white, 0.0f, pixelShader, vertexShader));
+    std::shared_ptr<Mesh> cube = std::make_shared<Mesh>(GetFullPathTo("../../Assets/Models/cube.obj").c_str(), device, context);
+    std::shared_ptr<Mesh> cylinder = std::make_shared<Mesh>(GetFullPathTo("../../Assets/Models/cylinder.obj").c_str(), device, context);
+    std::shared_ptr<Mesh> helix = std::make_shared<Mesh>(GetFullPathTo("../../Assets/Models/helix.obj").c_str(), device, context);
+    std::shared_ptr<Mesh> quad = std::make_shared<Mesh>(GetFullPathTo("../../Assets/Models/quad.obj").c_str(), device, context);
+    std::shared_ptr<Mesh> quad_double_sided = std::make_shared<Mesh>(GetFullPathTo("../../Assets/Models/quad_double_sided.obj").c_str(), device, context);
+    std::shared_ptr<Mesh> sphere = std::make_shared<Mesh>(GetFullPathTo("../../Assets/Models/sphere.obj").c_str(), device, context);
+    std::shared_ptr<Mesh> torus = std::make_shared<Mesh>(GetFullPathTo("../../Assets/Models/torus.obj").c_str(), device, context);
 
     // Assign geometry and materials to some entities
-    entities.push_back(Entity(cube, whiteMaterial));
-    entities.push_back(Entity(cylinder, whiteMaterial));
-    entities.push_back(Entity(helix, whiteMaterial));
-    entities.push_back(Entity(sphere, whiteMaterial));
-    entities.push_back(Entity(torus, whiteMaterial));
-    entities.push_back(Entity(quad, whiteMaterial));
-    entities.push_back(Entity(quad_double_sided, whiteMaterial));
+    entities.push_back(Entity(cube, ornateIron));
+    entities.push_back(Entity(cylinder, mud));
+    entities.push_back(Entity(helix, ornateIron));
+    entities.push_back(Entity(sphere, onyx));
+    entities.push_back(Entity(torus, brick));
+    entities.push_back(Entity(quad, onyx));
+    entities.push_back(Entity(quad_double_sided, brick));
 
     // Move entities so they're lined up nicely
     for (int i = 0; i < entities.size(); i++)
     {
-        entities[i].GetTransform()->SetPosition((i - 3) * 3, 0, 0);
+        entities[i].GetTransform()->SetPosition(((float)(i - 3) * 3), 0, 0);
     }
 }
 
@@ -261,13 +339,31 @@ void Game::Update(float deltaTime, float totalTime)
         Quit();
 
     // Move/scale/rotate entities every frame
-    if (moveEntities)
+    for (auto& e : entities)
     {
-        for (auto& e : entities)
+        if (moveEntities)
         {
+            // Move the entities up and down, and rotate them over time
             auto transform = e.GetTransform();
-            transform->MoveAbsolute(0, std::sin(totalTime) / 5 * deltaTime, 0);
-            transform->Rotate(1.0f * deltaTime, 1.0f * deltaTime, 0);
+            // Skip up and down for now...
+            // transform->MoveAbsolute(0, std::sin(totalTime / 3) / 10 * deltaTime, 0);
+            transform->Rotate(0, 0.25f * deltaTime, 0);
+        }
+
+        if (offsetUvs)
+        {
+            auto offset = e.GetMaterial()->GetUvOffset();
+            e.GetMaterial()->SetUvOffset(offset.x + deltaTime / 10, 0);
+        }
+
+        if (scaleUvs) 
+        {
+            auto offset = e.GetMaterial()->GetUvScale();
+            e.GetMaterial()->SetUvScale(std::sin(totalTime / 3) + 1, 1);
+        }
+        else 
+        {
+            e.GetMaterial()->SetUvScale(1, 1);
         }
     }
 
@@ -279,6 +375,8 @@ void Game::Update(float deltaTime, float totalTime)
     if (Input::GetInstance().KeyDown('O')) fov += 1.0f * deltaTime;
     if (Input::GetInstance().KeyDown('P')) fov -= 1.0f * deltaTime;
     if (Input::GetInstance().KeyPress('M')) moveEntities = !moveEntities;
+    if (Input::GetInstance().KeyPress('I')) scaleUvs = !scaleUvs;
+    if (Input::GetInstance().KeyPress('U')) offsetUvs = !offsetUvs;
     camera->SetFoV(fov);
 }
 
@@ -312,7 +410,8 @@ void Game::Draw(float deltaTime, float totalTime)
             &lights[0],                             // Address of the data to set the shader variable to
             sizeof(Light) * (int)lights.size());    // The size of the data to set
 
-        e.Draw(camera.get(), totalTime);
+        Camera* c = camera.get();
+        e.Draw(*c, totalTime);
     }
 
     // Present the back buffer to the user
@@ -389,5 +488,5 @@ void Game::GenerateCircle(float radius, int subdivisions, XMFLOAT4 color, float 
     }
 
     // assign the circle mesh with these verts/indices
-    circle = std::shared_ptr<Mesh>(new Mesh(&outerVertices[0], (int)outerVertices.size(), &indices[0], (int)indices.size(), device, context));
+    circle = std::make_shared<Mesh>(&outerVertices[0], (int)outerVertices.size(), &indices[0], (int)indices.size(), device, context);
 }

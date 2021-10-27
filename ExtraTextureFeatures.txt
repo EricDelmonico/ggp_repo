@@ -1,0 +1,1 @@
+I added the ability to use specular maps in PixelShader.hlsl, as well as the ability to scale and offset the UV's. Press 'U' to toggle UV offsetting for a little demo, and press 'I' for a demo of UV scaling. You can press 'M' to toggle rotating the entities, which (maybe?) makes it easier to see that the specular map exists.

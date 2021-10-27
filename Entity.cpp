@@ -31,30 +31,9 @@ Material* Entity::GetMaterial()
 }
 
 // Draws this Entity using its mesh and transform
-void Entity::Draw(Camera* camera, float totalTime)
+void Entity::Draw(Camera& camera, float totalTime)
 {
-	// Set the vertex and pixel shaders to use for the next Draw() command
-	//  - These don't technically need to be set every frame
-	//  - Once you start applying different shaders to different objects,
-	//    you'll need to swap the current shaders before each draw
-	SimpleVertexShader* vs = material->GetVertexShader();
-	SimplePixelShader* ps = material->GetPixelShader();
-
-	// Set vertex shader data
-	vs->SetShader();
-	vs->SetMatrix4x4("world", transform.GetWorldMatrix());
-	vs->SetMatrix4x4("worldInvTranspose", transform.GetWorldInverseTransposeMatrix());
-	vs->SetMatrix4x4("view", camera->GetView());
-	vs->SetMatrix4x4("projection", camera->GetProjection());
-	vs->CopyAllBufferData();
-
-	// Set pixel shader data
-	ps->SetShader();
-	ps->SetFloat4("colorTint", *material->GetColorTint());
-	ps->SetFloat("totalTime", totalTime);
-	ps->SetFloat3("cameraPos", camera->GetTransform()->GetPosition());
-	ps->SetFloat("roughness", material->GetRoughness());
-	ps->CopyAllBufferData();
+	material->PrepareForDraw(camera, totalTime, transform);
 
 	mesh->Draw();
 }
