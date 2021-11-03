@@ -41,9 +41,11 @@ private:
 	//  - More info here: https://github.com/Microsoft/DirectXTK/wiki/ComPtr
 	
 	// Shaders and shader-related constructs
-	std::shared_ptr<SimplePixelShader> pixelShader;
+	std::shared_ptr<SimplePixelShader> pixelShaderSpec;
+	std::shared_ptr<SimplePixelShader> pixelShaderSpecAndNormal;
 	std::shared_ptr<SimplePixelShader> customPixelShader;
 	std::shared_ptr<SimpleVertexShader> vertexShader;
+	std::shared_ptr<SimpleVertexShader> vertexShaderNormalMap;
 
 	// Some sample meshes
 	std::shared_ptr<Mesh> tri;
@@ -60,6 +62,7 @@ private:
 
 	// Materials
 	std::shared_ptr<Material> ornateIron;
+	std::shared_ptr<Material> concreteWaffle;
 	std::shared_ptr<Material> jute;
 	std::shared_ptr<Material> mud;
 	std::shared_ptr<Material> onyx;

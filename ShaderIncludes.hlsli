@@ -1,6 +1,10 @@
 #ifndef __GGP_SHADER_INCLUDES__
 #define __GGP_SHADER_INCLUDES__
 
+//
+// VERT TO PIXEL
+//
+
 // Struct representing the data we expect to receive from earlier pipeline stages
 // - Should match the output of our corresponding vertex shader
 // - The name of the struct itself is unimportant
@@ -19,6 +23,21 @@ struct VertexToPixel
 	float3 worldPosition	: POSITION;
 };
 
+struct VertexToPixel_NormalMap
+{
+	float4 screenPosition	: SV_POSITION;
+	float2 uv				: TEXCOORD;
+	float3 normal			: NORMAL;
+	float3 worldPosition	: POSITION;
+	float3 tangent			: TANGENT;
+};
+
+
+
+//
+// VERTEX SHADER INPUT
+//
+
 // Struct representing a single vertex worth of data
 // - This should match the vertex definition in our C++ code
 // - By "match", I mean the size, order and number of members
@@ -34,14 +53,28 @@ struct VertexShaderInput
 	float3 localPosition	: POSITION;     // XYZ position
 	float3 normal			: NORMAL;		// normal for this vertex
 	float2 uv				: TEXCOORD;		// uv coordinates
+	float3 tangent			: TANGENT;		// tangent for this vertex
 };
 
-// Light stuff
+
+
+//
+// LIGHT DEFINES
+//
+
 #define LIGHT_TYPE_DIRECTIONAL		0
 #define LIGHT_TYPE_POINT			1
 #define LIGHT_TYPE_SPOT				2
 
 #define MAX_SPECULAR_EXPONENT		256.0f;
+
+#define LIGHT_COUNT					5
+
+
+
+//
+// LIGHTS STRUCT
+//
 
 struct Light
 {
@@ -54,6 +87,12 @@ struct Light
 	float SpotFalloff;				// Spot needs value to restrict cone
 	float3 Padding;					// Padding to hit 16-byte boundary
 };
+
+
+
+//
+// LIGHTING EQUATIONS
+//
 
 // normal and dirToLight must be normalized
 float Diffuse(float3 normal, float3 dirToLight, float intensity)
@@ -82,26 +121,33 @@ float Specular(
 	return spec;
 }
 
+float3 LightResult(float diffuse, float specular, float3 lightColor, float3 surfaceColor) 
+{
+	specular *= any(diffuse);
+	return (diffuse + specular) * lightColor * surfaceColor;
+}
+
 float3 DirectionalLight(
 	Light light,
-	VertexToPixel input, 
+	float3 normal,
+	float3 worldPosition,
 	float3 cameraPos,
 	float roughness,
-	float surfaceColor,
+	float3 surfaceColor,
 	float specMapValue)
 {
 	float3 dirToLight = normalize(-light.Direction);
-	float diffuse = Diffuse(input.normal, dirToLight, light.Intensity);
+	float diffuse = Diffuse(normal, dirToLight, light.Intensity);
 	float specular =
 		Specular(
 			cameraPos,
-			input.worldPosition,
+			worldPosition,
 			light.Direction,
-			input.normal,
+			normal,
 			roughness,
 			light.Intensity) * specMapValue;
 
-	return (diffuse + specular) * light.Color * surfaceColor;
+	return LightResult(diffuse, specular, light.Color, surfaceColor);
 }
 
 float Attenuate(Light light, float3 worldPos)
@@ -113,26 +159,54 @@ float Attenuate(Light light, float3 worldPos)
 
 float3 PointLight(
 	Light light,
-	VertexToPixel input,
+	float3 normal,
+	float3 worldPosition,
 	float3 cameraPos,
-	float3 roughness,
+	float roughness,
 	float3 surfaceColor,
 	float specMapValue)
 {
-	float3 dirToLight = normalize(light.Position - input.worldPosition);
-	float diffuse = Diffuse(input.normal, dirToLight, light.Intensity);
+	float3 dirToLight = normalize(light.Position - worldPosition);
+	float diffuse = Diffuse(normal, dirToLight, light.Intensity);
 	float specular =
 		Specular(
 			cameraPos,
-			input.worldPosition,
+			worldPosition,
 			-dirToLight,
-			input.normal,
+			normal,
 			roughness,
 			light.Intensity) * specMapValue;
 
-	float3 lightResult = (diffuse + specular) * light.Color * surfaceColor;
-	float attenuation = Attenuate(light, input.worldPosition);
+	float3 lightResult = LightResult(diffuse, specular, light.Color, surfaceColor);
+	float attenuation = Attenuate(light, worldPosition);
 	return lightResult * attenuation;
+}
+
+float3 LightingLoop(
+	Light lights[LIGHT_COUNT], 
+	float3 normal,
+	float3 worldPosition,
+	float3 cameraPos, 
+	float roughness, 
+	float3 surfaceColor, 
+	float specMapValue)
+{
+	// Loop through lights and calculate each light's result
+	float3 finalLightResult = 0.0f;
+	for (int i = 0; i < LIGHT_COUNT; i++)
+	{
+		int type = lights[i].Type;
+		if (type == LIGHT_TYPE_DIRECTIONAL)
+		{
+			finalLightResult += DirectionalLight(lights[i], normal, worldPosition, cameraPos, roughness, surfaceColor, specMapValue);
+		}
+		if (type == LIGHT_TYPE_POINT) 
+		{
+			finalLightResult += PointLight(lights[i], normal, worldPosition, cameraPos, roughness, surfaceColor, specMapValue);
+		}
+	}
+
+	return finalLightResult;
 }
 
 #endif

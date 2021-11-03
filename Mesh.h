@@ -38,6 +38,9 @@ private:
     int numIndices;
     Microsoft::WRL::ComPtr<ID3D11DeviceContext> deviceContext;
 
+    // must be called in the constructor before the d3d vert/index buffers are created
+    void CalculateTangents(Vertex* verts, int numVerts, unsigned int* indices, int numIndices);
+
     void InitializeBuffers(
         Vertex* _vertices,
         int _numVerts,

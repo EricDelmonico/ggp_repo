@@ -78,7 +78,7 @@ void Game::Init()
             0,                          // y
             -20,                        // z
             5.0f,                       // Move speed
-            0.5f,                       // Look speed  
+            5.0f,                       // Look speed  
             XM_PIDIV4,                  // FOV
             (float)width / height));    // Aspect
 
@@ -136,32 +136,50 @@ void Game::CreateMaterials()
     // Ornate iron
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ornateIronAlbedoSRV;
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ornateIronSpecularSRV;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ornateIronNormalSRV;
     CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/OrnateIron/TexturesCom_FloorIronOrnate_1K_albedo.tif").c_str(), nullptr, ornateIronAlbedoSRV.GetAddressOf());
     CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/OrnateIron/TexturesCom_FloorIronOrnate_1K_roughness.tif").c_str(), nullptr, ornateIronSpecularSRV.GetAddressOf());
+    CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/OrnateIron/TexturesCom_FloorIronOrnate_1K_normal.tif").c_str(), nullptr, ornateIronNormalSRV.GetAddressOf());
 
     // Jute
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> juteAlbedoSRV;
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> juteSpecularSRV;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> juteNormalSRV;
     CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/Jute/TexturesCom_Fabric_JuteMatting_1K_albedo.tif").c_str(), nullptr, juteAlbedoSRV.GetAddressOf());
     CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/Jute/TexturesCom_Fabric_JuteMatting_1K_roughness.tif").c_str(), nullptr, juteSpecularSRV.GetAddressOf());
+    CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/Jute/TexturesCom_Fabric_JuteMatting_1K_normal.tif").c_str(), nullptr, juteNormalSRV.GetAddressOf());
 
     // Mud
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mudAlbedoSRV;
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mudSpecularSRV;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mudNormalSRV;
     CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/Mud/GroundTireTracks001_COL_4K.jpg").c_str(), nullptr, mudAlbedoSRV.GetAddressOf());
     CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/Mud/GroundTireTracks001_SPEC_4K.jpg").c_str(), nullptr, mudSpecularSRV.GetAddressOf());
+    CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/Mud/GroundTireTracks001_NRM_4K.jpg").c_str(), nullptr, mudNormalSRV.GetAddressOf());
 
     // Onyx
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> onyxAlbedoSRV;
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> onyxSpecularSRV;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> onyxNormalSRV;
     CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/Onyx/TilesOnyxOpaloBlack001_COL_4K.jpg").c_str(), nullptr, onyxAlbedoSRV.GetAddressOf());
     CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/Onyx/TilesOnyxOpaloBlack001_GLOSS_4K.jpg").c_str(), nullptr, onyxSpecularSRV.GetAddressOf());
+    CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/Onyx/TilesOnyxOpaloBlack001_NRM_4K.jpg").c_str(), nullptr, onyxNormalSRV.GetAddressOf());
 
     // Brick
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> brickAlbedoSRV;
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> brickSpecularSRV;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> brickNormalSRV;
     CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/Brick/StoneBricksBeige015_COL_4K.jpg").c_str(), nullptr, brickAlbedoSRV.GetAddressOf());
     CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/Brick/StoneBricksBeige015_GLOSS_4K.jpg").c_str(), nullptr, brickSpecularSRV.GetAddressOf());
+    CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/Brick/StoneBricksBeige015_NRM_4K.jpg").c_str(), nullptr, brickNormalSRV.GetAddressOf());
+
+    // Concrete waffle
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> concreteWaffleAlbedoSRV;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> concreteWaffleSpecularSRV;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> concreteWaffleNormalSRV;
+    CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/WaffleConcrete/TexturesCom_Concrete_WaffleSlab_512_albedo.tif").c_str(), nullptr, concreteWaffleAlbedoSRV.GetAddressOf());
+    CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/WaffleConcrete/TexturesCom_Concrete_WaffleSlab_512_roughness.tif").c_str(), nullptr, concreteWaffleSpecularSRV.GetAddressOf());
+    CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/WaffleConcrete/TexturesCom_Concrete_WaffleSlab_512_normal.tif").c_str(), nullptr, concreteWaffleNormalSRV.GetAddressOf());
 
     // Sampler description/sampler state
     Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState;
@@ -178,34 +196,47 @@ void Game::CreateMaterials()
     XMFLOAT4 white = { 1, 1, 1, 1 };
 
     // Ornate iron
-    ornateIron = std::make_shared<Material>(white, 0, pixelShader, vertexShader);
+    ornateIron = std::make_shared<Material>(white, 0, pixelShaderSpecAndNormal, vertexShaderNormalMap);
     ornateIron->AddTextureSRV("SurfaceTexture", ornateIronAlbedoSRV);
     ornateIron->AddTextureSRV("SpecularMap", ornateIronSpecularSRV);
+    ornateIron->AddTextureSRV("NormalMap", ornateIronNormalSRV);
     ornateIron->AddSampler("BasicSampler", samplerState);
 
     // Jute
-    jute = std::make_shared<Material>(white, 0, pixelShader, vertexShader);
+    jute = std::make_shared<Material>(white, 0, pixelShaderSpecAndNormal, vertexShaderNormalMap);
     jute->AddTextureSRV("SurfaceTexture", juteAlbedoSRV);
     jute->AddTextureSRV("SpecularMap", juteSpecularSRV);
+    jute->AddTextureSRV("NormalMap", juteNormalSRV);
     jute->AddSampler("BasicSampler", samplerState);
 
     // Mud
-    mud = std::make_shared<Material>(white, 0, pixelShader, vertexShader);
+    mud = std::make_shared<Material>(white, 0, pixelShaderSpecAndNormal, vertexShaderNormalMap);
     mud->AddTextureSRV("SurfaceTexture", mudAlbedoSRV);
     mud->AddTextureSRV("SpecularMap", mudSpecularSRV);
+    mud->AddTextureSRV("NormalMap", mudNormalSRV);
     mud->AddSampler("BasicSampler", samplerState);
 
     // Onyx
-    onyx = std::make_shared<Material>(white, 0, pixelShader, vertexShader);
+    onyx = std::make_shared<Material>(white, 0, pixelShaderSpecAndNormal, vertexShaderNormalMap);
     onyx->AddTextureSRV("SurfaceTexture", onyxAlbedoSRV);
     onyx->AddTextureSRV("SpecularMap", onyxSpecularSRV);
+    onyx->AddTextureSRV("NormalMap", onyxNormalSRV);
     onyx->AddSampler("BasicSampler", samplerState);
 
     // Brick
-    brick = std::make_shared<Material>(white, 0, pixelShader, vertexShader);
+    brick = std::make_shared<Material>(white, 0, pixelShaderSpecAndNormal, vertexShaderNormalMap);
     brick->AddTextureSRV("SurfaceTexture", brickAlbedoSRV);
     brick->AddTextureSRV("SpecularMap", brickSpecularSRV);
+    brick->AddTextureSRV("NormalMap", brickNormalSRV);
     brick->AddSampler("BasicSampler", samplerState);
+
+
+    // Concrete waffle
+    concreteWaffle = std::make_shared<Material>(white, 0, pixelShaderSpecAndNormal, vertexShaderNormalMap);
+    concreteWaffle->AddTextureSRV("SurfaceTexture", concreteWaffleAlbedoSRV);
+    concreteWaffle->AddTextureSRV("SpecularMap", concreteWaffleSpecularSRV);
+    concreteWaffle->AddTextureSRV("NormalMap", concreteWaffleNormalSRV);
+    concreteWaffle->AddSampler("BasicSampler", samplerState);
 }
 
 // --------------------------------------------------------
@@ -219,7 +250,9 @@ void Game::CreateMaterials()
 void Game::LoadShaders()
 {
     vertexShader = std::make_shared<SimpleVertexShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"VertexShader.cso").c_str());
-    pixelShader = std::make_shared<SimplePixelShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"PixelShader.cso").c_str());
+    vertexShaderNormalMap = std::make_shared<SimpleVertexShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"VertexShaderNormalMap.cso").c_str());
+    pixelShaderSpec = std::make_shared<SimplePixelShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"PixelShaderSpecOnly.cso").c_str());
+    pixelShaderSpecAndNormal = std::make_shared<SimplePixelShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"PixelShaderSpecAndNormal.cso").c_str());
     customPixelShader = std::make_shared<SimplePixelShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"CustomPS.cso").c_str());
 }
 
@@ -296,9 +329,9 @@ void Game::CreateBasicGeometry()
     std::shared_ptr<Mesh> torus = std::make_shared<Mesh>(GetFullPathTo("../../Assets/Models/torus.obj").c_str(), device, context);
 
     // Assign geometry and materials to some entities
-    entities.push_back(Entity(cube, ornateIron));
-    entities.push_back(Entity(cylinder, mud));
-    entities.push_back(Entity(helix, ornateIron));
+    entities.push_back(Entity(cube, concreteWaffle));
+    entities.push_back(Entity(cylinder, ornateIron));
+    entities.push_back(Entity(helix, jute));
     entities.push_back(Entity(sphere, onyx));
     entities.push_back(Entity(torus, brick));
     entities.push_back(Entity(quad, onyx));
@@ -347,7 +380,7 @@ void Game::Update(float deltaTime, float totalTime)
             auto transform = e.GetTransform();
             // Skip up and down for now...
             // transform->MoveAbsolute(0, std::sin(totalTime / 3) / 10 * deltaTime, 0);
-            transform->Rotate(0, 0.25f * deltaTime, 0);
+            transform->Rotate(0.25f * deltaTime, 0.25f * deltaTime, 0);
         }
 
         if (offsetUvs)
@@ -356,12 +389,12 @@ void Game::Update(float deltaTime, float totalTime)
             e.GetMaterial()->SetUvOffset(offset.x + deltaTime / 10, 0);
         }
 
-        if (scaleUvs) 
+        if (scaleUvs)
         {
             auto offset = e.GetMaterial()->GetUvScale();
             e.GetMaterial()->SetUvScale(std::sin(totalTime / 3) + 1, 1);
         }
-        else 
+        else
         {
             e.GetMaterial()->SetUvScale(1, 1);
         }
