@@ -10,6 +10,7 @@
 #include <memory>
 #include <vector>
 #include "Lights.h"
+#include "Sky.h"
 
 class Game 
 	: public DXCore
@@ -42,15 +43,19 @@ private:
 	
 	// Shaders and shader-related constructs
 	std::shared_ptr<SimplePixelShader> pixelShaderSpec;
+	std::shared_ptr<SimplePixelShader> pixelShaderSky;
 	std::shared_ptr<SimplePixelShader> pixelShaderSpecAndNormal;
 	std::shared_ptr<SimplePixelShader> customPixelShader;
+
 	std::shared_ptr<SimpleVertexShader> vertexShader;
+	std::shared_ptr<SimpleVertexShader> vertexShaderSky;
 	std::shared_ptr<SimpleVertexShader> vertexShaderNormalMap;
 
 	// Some sample meshes
 	std::shared_ptr<Mesh> tri;
 	std::shared_ptr<Mesh> pent;
 	std::shared_ptr<Mesh> circle;
+	std::shared_ptr<Mesh> cube;
 
 	// All the entities that will be drawn
 	std::vector<Entity> entities;
@@ -67,6 +72,12 @@ private:
 	std::shared_ptr<Material> mud;
 	std::shared_ptr<Material> onyx;
 	std::shared_ptr<Material> brick;
+
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState;
+
+	// Skybox things
+	std::shared_ptr<Sky> skybox;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> skyboxSrv;
 
 	bool moveEntities = false;
 	bool offsetUvs = false;

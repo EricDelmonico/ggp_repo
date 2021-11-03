@@ -4,6 +4,7 @@
 #include <vector>
 #include <cmath>
 #include <WICTextureLoader.h>
+#include <DDSTextureLoader.h>
 
 // Needed for a helper function to read compiled shader files from the hard drive
 #pragma comment(lib, "d3dcompiler.lib")
@@ -78,9 +79,12 @@ void Game::Init()
             0,                          // y
             -20,                        // z
             5.0f,                       // Move speed
-            5.0f,                       // Look speed  
+            0.3f,                       // Look speed  
             XM_PIDIV4,                  // FOV
             (float)width / height));    // Aspect
+
+    // Create sky
+    skybox = std::make_shared<Sky>(cube, pixelShaderSky, vertexShaderSky, samplerState, device);
 
     CreateSampleLights();
 }
@@ -182,7 +186,6 @@ void Game::CreateMaterials()
     CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/WaffleConcrete/TexturesCom_Concrete_WaffleSlab_512_normal.tif").c_str(), nullptr, concreteWaffleNormalSRV.GetAddressOf());
 
     // Sampler description/sampler state
-    Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState;
     D3D11_SAMPLER_DESC samplerDesc = {};
     samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
     samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
@@ -237,6 +240,9 @@ void Game::CreateMaterials()
     concreteWaffle->AddTextureSRV("SpecularMap", concreteWaffleSpecularSRV);
     concreteWaffle->AddTextureSRV("NormalMap", concreteWaffleNormalSRV);
     concreteWaffle->AddSampler("BasicSampler", samplerState);
+
+    // Skybox srv
+    CreateDDSTextureFromFile(device.Get(), GetFullPathTo_Wide(L"../Assets/Textures/Sky/skybox.dds").c_str(), nullptr, skyboxSrv.GetAddressOf());
 }
 
 // --------------------------------------------------------
@@ -249,11 +255,16 @@ void Game::CreateMaterials()
 // --------------------------------------------------------
 void Game::LoadShaders()
 {
+    // Vertex shaders
     vertexShader = std::make_shared<SimpleVertexShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"VertexShader.cso").c_str());
     vertexShaderNormalMap = std::make_shared<SimpleVertexShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"VertexShaderNormalMap.cso").c_str());
+    vertexShaderSky = std::make_shared<SimpleVertexShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"VertexShaderSky.cso").c_str());
+
+    // Pixel shaders
     pixelShaderSpec = std::make_shared<SimplePixelShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"PixelShaderSpecOnly.cso").c_str());
     pixelShaderSpecAndNormal = std::make_shared<SimplePixelShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"PixelShaderSpecAndNormal.cso").c_str());
     customPixelShader = std::make_shared<SimplePixelShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"CustomPS.cso").c_str());
+    pixelShaderSky = std::make_shared<SimplePixelShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"PixelShaderSky.cso").c_str());
 }
 
 
@@ -320,7 +331,7 @@ void Game::CreateBasicGeometry()
         white,          // color
         0);             // x offset
 
-    std::shared_ptr<Mesh> cube = std::make_shared<Mesh>(GetFullPathTo("../../Assets/Models/cube.obj").c_str(), device, context);
+    cube = std::make_shared<Mesh>(GetFullPathTo("../../Assets/Models/cube.obj").c_str(), device, context);
     std::shared_ptr<Mesh> cylinder = std::make_shared<Mesh>(GetFullPathTo("../../Assets/Models/cylinder.obj").c_str(), device, context);
     std::shared_ptr<Mesh> helix = std::make_shared<Mesh>(GetFullPathTo("../../Assets/Models/helix.obj").c_str(), device, context);
     std::shared_ptr<Mesh> quad = std::make_shared<Mesh>(GetFullPathTo("../../Assets/Models/quad.obj").c_str(), device, context);
