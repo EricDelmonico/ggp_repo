@@ -33,7 +33,7 @@ public:
     void SetUvScale(float u, float v);
     void SetUvOffset(float u, float v);
 
-    void AddTextureSRV(std::string shaderName, Microsoft::WRL::ComPtr < ID3D11ShaderResourceView> srv);
+    void AddTextureSRV(std::string shaderName, Microsoft::WRL::ComPtr <ID3D11ShaderResourceView> srv);
     void AddSampler(std::string shaderName, Microsoft::WRL::ComPtr<ID3D11SamplerState> sampler);
 
     void PrepareForDraw(Camera& camera, float totalTime, Transform& transform);
@@ -48,5 +48,8 @@ private:
 
     std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> textureSRVs;
     std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D11SamplerState>> samplers;
+
+    // Skybox only needed for some shaders
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> skySRV;
 };
 

@@ -2,11 +2,12 @@
 
 Sky::Sky(
     std::shared_ptr<Mesh> mesh,
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srv,
     std::shared_ptr<SimplePixelShader> pixelShader,
     std::shared_ptr<SimpleVertexShader> vertexShader,
     Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState,
     Microsoft::WRL::ComPtr<ID3D11Device> device)
-    : mesh(mesh), pixelShader(pixelShader), vertexShader(vertexShader), samplerState(samplerState)
+    : mesh(mesh), srv(srv), pixelShader(pixelShader), vertexShader(vertexShader), samplerState(samplerState)
 {
     // Set up rasterizer state
     D3D11_RASTERIZER_DESC rastDesc = {};
@@ -23,4 +24,29 @@ Sky::Sky(
 
 Sky::~Sky()
 {
+}
+
+void Sky::Draw(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, Camera* camera)
+{
+    // Change render states
+    context->RSSetState(rasterizerState.Get());
+    context->OMSetDepthStencilState(depthStencilState.Get(), 0);
+
+    // Set up sky shaders for drawing
+    vertexShader->SetShader();
+    vertexShader->SetMatrix4x4("view", camera->GetView());
+    vertexShader->SetMatrix4x4("projection", camera->GetProjection());
+    vertexShader->CopyAllBufferData();
+
+    pixelShader->SetShader();
+    pixelShader->SetShaderResourceView("SkyTexture", srv);
+    pixelShader->SetSamplerState("BasicSampler", samplerState);
+    pixelShader->CopyAllBufferData();
+
+    // Draw mesh
+    mesh->Draw();
+
+    // Reset render states
+    context->RSSetState(nullptr);
+    context->OMSetDepthStencilState(nullptr, 0);
 }

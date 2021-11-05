@@ -72,11 +72,12 @@ struct VertexShaderInput
 #define LIGHT_TYPE_POINT			1
 #define LIGHT_TYPE_SPOT				2
 
-#define MAX_SPECULAR_EXPONENT		256.0f;
+#define MAX_SPECULAR_EXPONENT		256.0f
 
 #define LIGHT_COUNT					5
 
-
+#define R0_NON_METAL				0.04f
+#define R0_CHROME					0.6f
 
 //
 // LIGHTS STRUCT
@@ -213,6 +214,13 @@ float3 LightingLoop(
 	}
 
 	return finalLightResult;
+}
+
+// Returns reflection coefficient based on Schlick approx.
+float SchlickFresnel(float R0, float3 normal, float3 dirFromCamera)
+{
+	float3 cosTheta = saturate(dot(normal, -dirFromCamera));
+	return R0 + (1 - R0) * pow(1 - cosTheta, 5);
 }
 
 #endif

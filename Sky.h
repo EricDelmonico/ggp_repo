@@ -10,6 +10,7 @@ class Sky
 {
 public:
     Sky(std::shared_ptr<Mesh> mesh,
+        Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srv,
         std::shared_ptr<SimplePixelShader> pixelShader,
         std::shared_ptr<SimpleVertexShader> vertexShader,
         Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState,

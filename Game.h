@@ -45,6 +45,7 @@ private:
 	std::shared_ptr<SimplePixelShader> pixelShaderSpec;
 	std::shared_ptr<SimplePixelShader> pixelShaderSky;
 	std::shared_ptr<SimplePixelShader> pixelShaderSpecAndNormal;
+	std::shared_ptr<SimplePixelShader> pixelShaderSpecNormalRefl;
 	std::shared_ptr<SimplePixelShader> customPixelShader;
 
 	std::shared_ptr<SimpleVertexShader> vertexShader;

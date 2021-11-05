@@ -16,7 +16,7 @@ VertexToPixel_Sky main(VertexShaderInput input)
     viewCopy._24 = 0;
     viewCopy._34 = 0;
 
-    output.position = mul(mul(input.localPosition, viewCopy), projection);
+    output.position = mul(mul(projection, viewCopy), input.localPosition);
 
     // Depth will always be 1
     output.position.z = 1;

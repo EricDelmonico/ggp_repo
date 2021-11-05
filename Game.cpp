@@ -79,12 +79,12 @@ void Game::Init()
             0,                          // y
             -20,                        // z
             5.0f,                       // Move speed
-            0.3f,                       // Look speed  
+            3.0f,                       // Look speed  
             XM_PIDIV4,                  // FOV
             (float)width / height));    // Aspect
 
     // Create sky
-    skybox = std::make_shared<Sky>(cube, pixelShaderSky, vertexShaderSky, samplerState, device);
+    skybox = std::make_shared<Sky>(cube, skyboxSrv, pixelShaderSky, vertexShaderSky, samplerState, device);
 
     CreateSampleLights();
 }
@@ -195,54 +195,60 @@ void Game::CreateMaterials()
     samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
     device->CreateSamplerState(&samplerDesc, samplerState.GetAddressOf());
 
+    // Skybox srv
+    CreateDDSTextureFromFile(device.Get(), GetFullPathTo_Wide(L"../../Assets/Textures/Sky/skybox.dds").c_str(), nullptr, skyboxSrv.GetAddressOf());
+
     // Create the actual materials
     XMFLOAT4 white = { 1, 1, 1, 1 };
 
     // Ornate iron
-    ornateIron = std::make_shared<Material>(white, 0, pixelShaderSpecAndNormal, vertexShaderNormalMap);
+    ornateIron = std::make_shared<Material>(white, 0, pixelShaderSpecNormalRefl, vertexShaderNormalMap);
     ornateIron->AddTextureSRV("SurfaceTexture", ornateIronAlbedoSRV);
     ornateIron->AddTextureSRV("SpecularMap", ornateIronSpecularSRV);
     ornateIron->AddTextureSRV("NormalMap", ornateIronNormalSRV);
+    ornateIron->AddTextureSRV("SkyTexture", skyboxSrv);
     ornateIron->AddSampler("BasicSampler", samplerState);
 
     // Jute
-    jute = std::make_shared<Material>(white, 0, pixelShaderSpecAndNormal, vertexShaderNormalMap);
+    jute = std::make_shared<Material>(white, 0, pixelShaderSpecNormalRefl, vertexShaderNormalMap);
     jute->AddTextureSRV("SurfaceTexture", juteAlbedoSRV);
     jute->AddTextureSRV("SpecularMap", juteSpecularSRV);
     jute->AddTextureSRV("NormalMap", juteNormalSRV);
+    jute->AddTextureSRV("SkyTexture", skyboxSrv);
     jute->AddSampler("BasicSampler", samplerState);
 
     // Mud
-    mud = std::make_shared<Material>(white, 0, pixelShaderSpecAndNormal, vertexShaderNormalMap);
+    mud = std::make_shared<Material>(white, 0, pixelShaderSpecNormalRefl, vertexShaderNormalMap);
     mud->AddTextureSRV("SurfaceTexture", mudAlbedoSRV);
     mud->AddTextureSRV("SpecularMap", mudSpecularSRV);
     mud->AddTextureSRV("NormalMap", mudNormalSRV);
+    mud->AddTextureSRV("SkyTexture", skyboxSrv);
     mud->AddSampler("BasicSampler", samplerState);
 
     // Onyx
-    onyx = std::make_shared<Material>(white, 0, pixelShaderSpecAndNormal, vertexShaderNormalMap);
+    onyx = std::make_shared<Material>(white, 0, pixelShaderSpecNormalRefl, vertexShaderNormalMap);
     onyx->AddTextureSRV("SurfaceTexture", onyxAlbedoSRV);
     onyx->AddTextureSRV("SpecularMap", onyxSpecularSRV);
     onyx->AddTextureSRV("NormalMap", onyxNormalSRV);
+    onyx->AddTextureSRV("SkyTexture", skyboxSrv);
     onyx->AddSampler("BasicSampler", samplerState);
 
     // Brick
-    brick = std::make_shared<Material>(white, 0, pixelShaderSpecAndNormal, vertexShaderNormalMap);
+    brick = std::make_shared<Material>(white, 0, pixelShaderSpecNormalRefl, vertexShaderNormalMap);
     brick->AddTextureSRV("SurfaceTexture", brickAlbedoSRV);
     brick->AddTextureSRV("SpecularMap", brickSpecularSRV);
     brick->AddTextureSRV("NormalMap", brickNormalSRV);
+    brick->AddTextureSRV("SkyTexture", skyboxSrv);
     brick->AddSampler("BasicSampler", samplerState);
 
 
     // Concrete waffle
-    concreteWaffle = std::make_shared<Material>(white, 0, pixelShaderSpecAndNormal, vertexShaderNormalMap);
+    concreteWaffle = std::make_shared<Material>(white, 0, pixelShaderSpecNormalRefl, vertexShaderNormalMap);
     concreteWaffle->AddTextureSRV("SurfaceTexture", concreteWaffleAlbedoSRV);
     concreteWaffle->AddTextureSRV("SpecularMap", concreteWaffleSpecularSRV);
     concreteWaffle->AddTextureSRV("NormalMap", concreteWaffleNormalSRV);
+    concreteWaffle->AddTextureSRV("SkyTexture", skyboxSrv);
     concreteWaffle->AddSampler("BasicSampler", samplerState);
-
-    // Skybox srv
-    CreateDDSTextureFromFile(device.Get(), GetFullPathTo_Wide(L"../Assets/Textures/Sky/skybox.dds").c_str(), nullptr, skyboxSrv.GetAddressOf());
 }
 
 // --------------------------------------------------------
@@ -261,10 +267,11 @@ void Game::LoadShaders()
     vertexShaderSky = std::make_shared<SimpleVertexShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"VertexShaderSky.cso").c_str());
 
     // Pixel shaders
+    pixelShaderSky = std::make_shared<SimplePixelShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"PixelShaderSky.cso").c_str());
     pixelShaderSpec = std::make_shared<SimplePixelShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"PixelShaderSpecOnly.cso").c_str());
     pixelShaderSpecAndNormal = std::make_shared<SimplePixelShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"PixelShaderSpecAndNormal.cso").c_str());
+    pixelShaderSpecNormalRefl = std::make_shared<SimplePixelShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"pixelShaderSpecNormalRefl.cso").c_str());
     customPixelShader = std::make_shared<SimplePixelShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"CustomPS.cso").c_str());
-    pixelShaderSky = std::make_shared<SimplePixelShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"PixelShaderSky.cso").c_str());
 }
 
 
@@ -442,8 +449,10 @@ void Game::Draw(float deltaTime, float totalTime)
         1.0f,
         0);
 
+    // Sun in skybox is yellow-red
+    XMFLOAT3 ambientColor = XMFLOAT3(.15f, .125f, .075f);
+
     // Draw entities
-    XMFLOAT3 ambientColor = XMFLOAT3(.1f, .1f, .25f);
     for (auto& e : entities)
     {
         auto pixelShader = e.GetMaterial()->GetPixelShader();
@@ -457,6 +466,9 @@ void Game::Draw(float deltaTime, float totalTime)
         Camera* c = camera.get();
         e.Draw(*c, totalTime);
     }
+
+    // Draw sky last!
+    skybox->Draw(context, camera.get());
 
     // Present the back buffer to the user
     //  - Puts the final frame we're drawing into the window so the user can see it
