@@ -59,5 +59,5 @@ float4 main(VertexToPixel_NormalMap input) : SV_TARGET
     
     float3 finalColor = finalLightResult + (colorTint.rgb * ambient);
     
-    return float4(finalColor, 1);
+    return float4(pow(finalColor, 1.0f / 2.2f), 1);
 }

@@ -5,6 +5,7 @@
 #include <cmath>
 #include <WICTextureLoader.h>
 #include <DDSTextureLoader.h>
+#include <iostream>
 
 // Needed for a helper function to read compiled shader files from the hard drive
 #pragma comment(lib, "d3dcompiler.lib")
@@ -79,7 +80,7 @@ void Game::Init()
             0,                          // y
             -20,                        // z
             5.0f,                       // Move speed
-            3.0f,                       // Look speed  
+            0.3f,                       // Look speed  
             XM_PIDIV4,                  // FOV
             (float)width / height));    // Aspect
 
@@ -416,6 +417,15 @@ void Game::Update(float deltaTime, float totalTime)
         {
             e.GetMaterial()->SetUvScale(1, 1);
         }
+
+        if (gammaCorrectTextures) 
+        {
+            e.GetMaterial()->SetPixelShader(pixelShaderSpecNormalRefl);
+        }
+        else 
+        {
+            e.GetMaterial()->SetPixelShader(pixelShaderSpecAndNormal);
+        }
     }
 
     // Update the camera every frame
@@ -428,6 +438,11 @@ void Game::Update(float deltaTime, float totalTime)
     if (Input::GetInstance().KeyPress('M')) moveEntities = !moveEntities;
     if (Input::GetInstance().KeyPress('I')) scaleUvs = !scaleUvs;
     if (Input::GetInstance().KeyPress('U')) offsetUvs = !offsetUvs;
+    if (Input::GetInstance().KeyPress('G'))
+    {
+        gammaCorrectTextures = !gammaCorrectTextures;
+        std::cout << "Gamma correct textures " << gammaCorrectTextures << std::endl;
+    }
     camera->SetFoV(fov);
 }
 
