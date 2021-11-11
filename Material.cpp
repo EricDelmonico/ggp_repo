@@ -2,12 +2,11 @@
 
 Material::Material(
     DirectX::XMFLOAT4 colorTint,
-    float roughness,
     std::shared_ptr<SimplePixelShader> pixelShader,
     std::shared_ptr<SimpleVertexShader> vertexShader,
     DirectX::XMFLOAT2 uvScale,
     DirectX::XMFLOAT2 uvOffset)
-    : colorTint(colorTint), roughness(roughness), pixelShader(pixelShader), vertexShader(vertexShader), uvScale(uvScale), uvOffset(uvOffset)
+    : colorTint(colorTint), pixelShader(pixelShader), vertexShader(vertexShader), uvScale(uvScale), uvOffset(uvOffset)
 {
 }
 
@@ -18,11 +17,6 @@ Material::~Material()
 DirectX::XMFLOAT4* Material::GetColorTint()
 {
     return &colorTint;
-}
-
-float Material::GetRoughness()
-{
-    return roughness;
 }
 
 SimplePixelShader* Material::GetPixelShader()
@@ -48,11 +42,6 @@ DirectX::XMFLOAT2 Material::GetUvOffset()
 void Material::SetColorTint(DirectX::XMFLOAT4 colorTint)
 {
     this->colorTint = colorTint;
-}
-
-void Material::SetRoughness(float r)
-{
-    roughness = r;
 }
 
 void Material::SetPixelShader(std::shared_ptr<SimplePixelShader> pShader)
@@ -102,7 +91,6 @@ void Material::PrepareForDraw(Camera& camera, float totalTime, Transform& transf
     pixelShader->SetFloat3("cameraPos", camera.GetTransform()->GetPosition());
     pixelShader->SetFloat2("uvScale", uvScale);
     pixelShader->SetFloat2("uvOffset", uvOffset);
-    pixelShader->SetFloat("roughness", roughness);
     // Set up textures
     for (auto& t : textureSRVs) { pixelShader->SetShaderResourceView(t.first, t.second); }
     for (auto& s : samplers) { pixelShader->SetSamplerState(s.first, s.second); }

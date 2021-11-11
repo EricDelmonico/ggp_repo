@@ -2,7 +2,7 @@
 #define __GGP_SHADER_INCLUDES__
 
 //
-// VERT TO PIXEL
+// VERT TO PIXEL--------------------------------------------------------
 //
 
 // Struct representing the data we expect to receive from earlier pipeline stages
@@ -41,7 +41,7 @@ struct VertexToPixel_Sky
 
 
 //
-// VERTEX SHADER INPUT
+// VERTEX SHADER INPUT--------------------------------------------------
 //
 
 // Struct representing a single vertex worth of data
@@ -77,7 +77,7 @@ struct VertexShaderInput
 #define LIGHT_COUNT					5
 
 //
-// LIGHTS STRUCT
+// LIGHTS STRUCT--------------------------------------------------------
 //
 
 struct Light
@@ -95,7 +95,7 @@ struct Light
 
 
 //
-// LIGHTING EQUATIONS
+// NON-PBR LIGHTING EQUATIONS-------------------------------------------
 //
 
 // normal and dirToLight must be normalized
@@ -223,6 +223,188 @@ float SkyReflectionFresnel(float R0, float3 normal, float3 dirFromCamera)
 {
 	float3 cosTheta = saturate(dot(normal, -dirFromCamera));
 	return R0 + (1 - R0) * pow(1 - cosTheta, 5);
+}
+
+
+
+//
+// PBR CONSTANTS -------------------------------------------------------
+//
+
+// Fresnel values
+static const float F0_NON_METAL = 0.04f;
+static const float F0_CHROME = 0.6f;
+
+// Minimum roughness for when spec distribution function denominator goes to zero
+static const float MIN_ROUGHNESS = 0.0000001f;
+
+static const float PI = 3.14159265359f;
+
+
+
+//
+// PBR FUNCTIONS--------------------------------------------------------
+//
+
+// Lambert diffuse BRDF - Same as basic diffuse
+// NOTE: function assumes vectors are already normalized
+float DiffusePBR(float3 normal, float3 dirToLight)
+{
+	return saturate(dot(normal, dirToLight));
+}
+
+// Calculates diffuse amount while maintaining conservation of energy
+//
+// diffuse - diffuse amount
+// specular - specular color
+// metalness - surface metalness amount
+float3 DiffuseEnergyConserve(float3 diffuse, float3 specular, float metalness)
+{
+	return diffuse * ((1 - saturate(specular)) * (1 - metalness));
+}
+
+// Trowbridge-Reitz/GGX
+//
+// a - roughness
+// h - half vector
+// n - normal
+//
+// Formula: D(h, n) = a^2 / pi * ((n dot h)^2 * (a^2 - 1) + 1)^2
+float SpecDistribution(float a, float3 h, float3 n)
+{
+	// Calculate some of the terms
+	float nDotH = saturate(dot(n, h));
+	float nDotHSqr = nDotH * nDotH;
+	a = a * a;
+	float aSqr = max(a * a, MIN_ROUGHNESS); // Done after remapping a
+
+	float denominator = PI * pow((nDotHSqr) * (aSqr - 1) + 1, 2);
+
+	return aSqr / denominator;
+}
+
+// Fresnel Term - Schlick
+//
+// v - view vector
+// h - half vector
+// f0 - reflection factor for material when normal is straight on
+//
+// F(v, h, f0) = f0 + (1 - f0)(1 - (v dot h))^5
+float3 Fresnel(float3 v, float3 h, float3 f0)
+{
+	float vDotH = saturate(dot(v, h));
+	return f0 + (1 - f0) * pow(1 - vDotH, 5);
+}
+
+// Geometric Shadowing - Schlick-GGX (Based on Schlick-Beckmann)
+// -k is remapped to a / 2, roughness remapped to (r+1) / 2
+//
+// n - normal
+// v - view vector
+// roughness - roughness of material
+//
+// G(n, v) = (n dot v) / ((n dot v) * (1 - k) + k) 
+float GeometricShadowing(float3 n, float3 v, float roughness)
+{
+	// Remap
+	float k = pow(roughness + 1, 2) / 8.0f;
+	float nDotV = saturate(dot(n, v));
+
+	// Final value
+	return nDotV / (nDotV * (1 - k) + k);
+}
+
+// Microfacet BRDF (Specular)
+//
+// f(l, v) = D(h)F(v, h)G(l, v, h) / 4(n dot l)(n dot v)
+// - part of the denominator cancelled out by the numerator
+//
+// D() - Spec dist - Trowbridge-Reitz (GGX)
+// F() - Fresnel - Schlick approx
+// G() - Geometric shadowing - Schlick-GGX
+//
+// n - normal
+// l - normalized direction to light
+// v - view vector
+// roughness - material roughness
+// specColor - material's specular color
+//
+float3 MicrofacetBRDF(float3 n, float3 l, float3 v, float roughness, float3 specColor)
+{
+	float3 h = normalize(v + l);
+
+	// Get results from the various functions
+	float D = SpecDistribution(roughness, h, n);
+	float3 F = Fresnel(v, h, specColor);
+	float G = GeometricShadowing(n, v, roughness) * GeometricShadowing(n, l, roughness);
+
+	// Final formula
+	// Denominator dot products partially cancelled by G()
+	// (Page 16: http://blog.selfshadow.com/publications/s2012-shading-course/hoffman/s2012_pbs_physics_math_notes.pdfreturn)
+	return (D * F * G) / (4 * max(dot(n, v), dot(n, l)));
+}
+
+
+
+//
+// PBR LIGHT HELPER FUNCTIONS-------------------------------------------
+//
+
+// Calculates directional light result for a PBR object
+//
+// n - normal
+// camPos - position of the camera in the world
+// worldPos - position of this pixel in the world
+// roughness - material roughness
+// specColor - material's specular color
+// metalness - metalness value for this pixel
+// surfaceColor - surface color at this pixel
+//
+float3 DirLightPBR(Light light, float3 n, float3 camPos, float3 worldPos, float roughness, float3 specColor, float metalness, float3 surfaceColor)
+{
+	// Calculate l and v
+	float3 l = -light.Direction;
+	float3 v = normalize(camPos - worldPos);
+
+	// Get diffuse and spec amounts
+	float diff = DiffusePBR(n, l);
+	float3 spec = MicrofacetBRDF(n, l, v, roughness, specColor);
+
+	// Calculate diffuse taking conservation of energy into account
+	// (Reflected light does not get diffused)
+	float3 balancedDiff = DiffuseEnergyConserve(diff.rrr, spec, metalness);
+
+	// Combine the total diffuse and spec values for this light
+	return (balancedDiff * surfaceColor + spec) * light.Intensity * light.Color;
+}
+
+// Calculates point light result for a PBR object
+//
+// n - normal
+// camPos - position of the camera in the world
+// worldPos - position of this pixel in the world
+// roughness - material roughness
+// specColor - material's specular color
+// metalness - metalness value for this pixel
+// surfaceColor - surface color at this pixel
+//
+float3 PointLightPBR(Light light, float3 n, float3 camPos, float3 worldPos, float roughness, float3 specColor, float metalness, float3 surfaceColor)
+{
+	// Calculate l and v vector (direction to the light and direction to the camera
+	float3 l = normalize(light.Position - worldPos);
+	float3 v = normalize(camPos - worldPos);
+
+	// Get diffuse and spec amounts, along with the attenuation since this is a point light
+	float diff = DiffusePBR(n, l);
+	float3 spec = MicrofacetBRDF(n, l, v, roughness, specColor);
+	float atten = Attenuate(light, worldPos);
+
+	// Calculate diffuse taking conservation of energy into account
+	// (Reflected light does not get diffused)
+	float3 balancedDiff = DiffuseEnergyConserve(diff, spec, metalness);
+
+	// Combine the total diffuse and spec values for this light
+	return (balancedDiff * surfaceColor + spec) * atten * light.Intensity * light.Color;
 }
 
 #endif
