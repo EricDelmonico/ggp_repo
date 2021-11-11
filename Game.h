@@ -37,6 +37,8 @@ private:
 	void CreateMaterials();
 	void GenerateCircle(float radius, int subdivisions, DirectX::XMFLOAT4 color, float xOffset);
 	
+	void UpdateEntity(Entity& e, float deltaTime, float totalTime);
+
 	// Note the usage of ComPtr below
 	//  - This is a smart pointer for objects that abide by the
 	//    Component Object Model, which DirectX objects do
@@ -61,6 +63,7 @@ private:
 
 	// All the entities that will be drawn
 	std::vector<Entity> entities;
+	std::vector<Entity> entitiesAllSpheres;
 
 	std::shared_ptr<Camera> camera;
 
@@ -77,9 +80,8 @@ private:
 	std::shared_ptr<Sky> skybox;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> skyboxSrv;
 
-	bool moveEntities = false;
+	bool moveEntities = true;
 	bool offsetUvs = false;
 	bool scaleUvs = false;
-	bool environmentReflections = true;
-
+	bool spheresOnly = true;
 };

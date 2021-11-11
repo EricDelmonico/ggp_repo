@@ -169,8 +169,8 @@ void Game::CreateMaterials()
         Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> tempMetalness;
         Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> tempRoughness;
         CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/PBR_Textures/" + t + L"_albedo.png").c_str(), nullptr, tempAlbedo.GetAddressOf());
-        CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/PBR_Textures/" + t + L"_normal.png").c_str(), nullptr, tempNormal.GetAddressOf());
-        CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/PBR_Textures/" + t + L"_metalness.png").c_str(), nullptr, tempMetalness .GetAddressOf());
+        CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/PBR_Textures/" + t + L"_normals.png").c_str(), nullptr, tempNormal.GetAddressOf());
+        CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/PBR_Textures/" + t + L"_metal.png").c_str(), nullptr, tempMetalness .GetAddressOf());
         CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/PBR_Textures/" + t + L"_roughness.png").c_str(), nullptr, tempRoughness.GetAddressOf());
 
         std::shared_ptr<Material> material = std::make_shared<Material>(white, pixelShaderSpecNormalRefl, vertexShaderNormalMap);
@@ -293,15 +293,24 @@ void Game::CreateBasicGeometry()
     entities.push_back(Entity(cube, materials[L"bronze"]));
     entities.push_back(Entity(cylinder, materials[L"cobblestone"]));
     entities.push_back(Entity(helix, materials[L"floor"]));
-    entities.push_back(Entity(sphere, materials[L"paint"]));
+    entities.push_back(Entity(sphere, materials[L"scratched"]));
     entities.push_back(Entity(torus, materials[L"rough"]));
-    entities.push_back(Entity(quad, materials[L"scratched"]));
+    entities.push_back(Entity(quad, materials[L"paint"]));
     entities.push_back(Entity(quad_double_sided, materials[L"wood"]));
+
+    entitiesAllSpheres.push_back(Entity(sphere, materials[L"bronze"]));
+    entitiesAllSpheres.push_back(Entity(sphere, materials[L"cobblestone"]));
+    entitiesAllSpheres.push_back(Entity(sphere, materials[L"floor"]));
+    entitiesAllSpheres.push_back(Entity(sphere, materials[L"scratched"]));
+    entitiesAllSpheres.push_back(Entity(sphere, materials[L"rough"]));
+    entitiesAllSpheres.push_back(Entity(sphere, materials[L"paint"]));
+    entitiesAllSpheres.push_back(Entity(sphere, materials[L"wood"]));
 
     // Move entities so they're lined up nicely
     for (int i = 0; i < entities.size(); i++)
     {
         entities[i].GetTransform()->SetPosition(((float)(i - 3) * 3), 0, 0);
+        entitiesAllSpheres[i].GetTransform()->SetPosition(((float)(i - 3) * 3), 0, 0);
     }
 }
 
@@ -332,41 +341,19 @@ void Game::Update(float deltaTime, float totalTime)
     if (Input::GetInstance().KeyDown(VK_ESCAPE))
         Quit();
 
-    // Move/scale/rotate entities every frame
-    for (auto& e : entities)
+    // Move/scale/rotate entities every frame=
+    if (spheresOnly)
     {
-        if (moveEntities)
+        for (auto& e : entitiesAllSpheres)
         {
-            // Move the entities up and down, and rotate them over time
-            auto transform = e.GetTransform();
-            // Skip up and down for now...
-            // transform->MoveAbsolute(0, std::sin(totalTime / 3) / 10 * deltaTime, 0);
-            transform->Rotate(0.25f * deltaTime, 0.25f * deltaTime, 0);
+            UpdateEntity(e, deltaTime, totalTime);
         }
-
-        if (offsetUvs)
+    }
+    else
+    {
+        for (auto& e : entities)
         {
-            auto offset = e.GetMaterial()->GetUvOffset();
-            e.GetMaterial()->SetUvOffset(offset.x + deltaTime / 10, 0);
-        }
-
-        if (scaleUvs)
-        {
-            auto offset = e.GetMaterial()->GetUvScale();
-            e.GetMaterial()->SetUvScale(std::sin(totalTime / 3) + 1, 1);
-        }
-        else
-        {
-            e.GetMaterial()->SetUvScale(1, 1);
-        }
-
-        if (environmentReflections)
-        {
-            e.GetMaterial()->SetPixelShader(pixelShaderSpecNormalRefl);
-        }
-        else 
-        {
-            e.GetMaterial()->SetPixelShader(pixelShaderSpecAndNormal);
+            UpdateEntity(e, deltaTime, totalTime);
         }
     }
 
@@ -380,12 +367,36 @@ void Game::Update(float deltaTime, float totalTime)
     if (Input::GetInstance().KeyPress('M')) moveEntities = !moveEntities;
     if (Input::GetInstance().KeyPress('I')) scaleUvs = !scaleUvs;
     if (Input::GetInstance().KeyPress('U')) offsetUvs = !offsetUvs;
-    if (Input::GetInstance().KeyPress('G'))
-    {
-        environmentReflections = !environmentReflections;
-        std::cout << "Sky reflections " << (environmentReflections ? "On" : "Off") << std::endl;
-    }
+    if (Input::GetInstance().KeyPress('L')) spheresOnly = !spheresOnly;
     camera->SetFoV(fov);
+}
+
+void Game::UpdateEntity(Entity& e, float deltaTime, float totalTime)
+{
+    if (moveEntities)
+    {
+        // Move the entities up and down, and rotate them over time
+        auto transform = e.GetTransform();
+        // Skip up and down for now...
+        //transform->MoveAbsolute(0, std::sin(totalTime / 3) / 10 * deltaTime, 0);
+        transform->Rotate(0.25f * deltaTime, 0.25f * deltaTime, 0);
+    }
+
+    if (offsetUvs)
+    {
+        auto offset = e.GetMaterial()->GetUvOffset();
+        e.GetMaterial()->SetUvOffset(offset.x + deltaTime / 10, 0);
+    }
+
+    if (scaleUvs)
+    {
+        auto offset = e.GetMaterial()->GetUvScale();
+        e.GetMaterial()->SetUvScale(std::sin(totalTime / 3) + 1, 1);
+    }
+    else
+    {
+        e.GetMaterial()->SetUvScale(1, 1);
+    }
 }
 
 // --------------------------------------------------------
@@ -410,7 +421,8 @@ void Game::Draw(float deltaTime, float totalTime)
     XMFLOAT3 ambientColor = XMFLOAT3(.15f, .125f, .075f);
 
     // Draw entities
-    for (auto& e : entities)
+    auto entityList = spheresOnly ? entitiesAllSpheres : entities;
+    for (auto& e : entityList)
     {
         auto pixelShader = e.GetMaterial()->GetPixelShader();
         pixelShader->SetFloat3("ambient", ambientColor);

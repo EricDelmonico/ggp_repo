@@ -19,14 +19,12 @@ public:
     ~Material();
 
     DirectX::XMFLOAT4* GetColorTint();
-    float GetRoughness();
     SimplePixelShader* GetPixelShader();
     SimpleVertexShader* GetVertexShader();
     DirectX::XMFLOAT2 GetUvScale();
     DirectX::XMFLOAT2 GetUvOffset();
 
     void SetColorTint(DirectX::XMFLOAT4 colorTint);
-    void SetRoughness(float r);
     void SetPixelShader(std::shared_ptr<SimplePixelShader> pShader);
     void SetVertexShader(std::shared_ptr<SimpleVertexShader> vShader);
     void SetUvScale(float u, float v);
@@ -39,7 +37,6 @@ public:
 
 private:
     DirectX::XMFLOAT4 colorTint;
-    float roughness;
     DirectX::XMFLOAT2 uvScale;
     DirectX::XMFLOAT2 uvOffset;
     std::shared_ptr<SimplePixelShader> pixelShader;

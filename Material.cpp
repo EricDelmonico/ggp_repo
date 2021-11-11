@@ -19,11 +19,6 @@ DirectX::XMFLOAT4* Material::GetColorTint()
     return &colorTint;
 }
 
-float Material::GetRoughness()
-{
-    return roughness;
-}
-
 SimplePixelShader* Material::GetPixelShader()
 {
     return pixelShader.get();
@@ -47,11 +42,6 @@ DirectX::XMFLOAT2 Material::GetUvOffset()
 void Material::SetColorTint(DirectX::XMFLOAT4 colorTint)
 {
     this->colorTint = colorTint;
-}
-
-void Material::SetRoughness(float r)
-{
-    roughness = r;
 }
 
 void Material::SetPixelShader(std::shared_ptr<SimplePixelShader> pShader)
