@@ -12,7 +12,6 @@ class Material
 public:
     Material(
         DirectX::XMFLOAT4 colorTint,
-        float roughness,
         std::shared_ptr<SimplePixelShader> pixelShader,
         std::shared_ptr<SimpleVertexShader> vertexShader,
         DirectX::XMFLOAT2 uvScale = { 1, 1 },

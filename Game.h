@@ -11,6 +11,7 @@
 #include <vector>
 #include "Lights.h"
 #include "Sky.h"
+#include <unordered_map>
 
 class Game 
 	: public DXCore
@@ -67,12 +68,8 @@ private:
 	std::vector<Light> lights;
 
 	// Materials
-	std::shared_ptr<Material> ornateIron;
-	std::shared_ptr<Material> concreteWaffle;
-	std::shared_ptr<Material> jute;
-	std::shared_ptr<Material> mud;
-	std::shared_ptr<Material> onyx;
-	std::shared_ptr<Material> brick;
+	std::vector<std::wstring> textureFiles;
+	std::unordered_map<std::wstring, std::shared_ptr<Material>> materials;
 
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState;
 
@@ -84,4 +81,5 @@ private:
 	bool offsetUvs = false;
 	bool scaleUvs = false;
 	bool environmentReflections = true;
+
 };

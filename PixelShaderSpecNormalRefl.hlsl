@@ -1,22 +1,22 @@
 #include "ShaderIncludes.hlsli"
-#include "PBRIncludes.hlsli"
 
 cbuffer ExternalData : register(b0)
 {
     float4 colorTint;
     float totalTime;
     float3 cameraPos;
-    float roughness;
     float3 ambient;
+    float _;
     float2 uvScale;
     float2 uvOffset;
     Light lights[LIGHT_COUNT];
 }
 
-Texture2D SurfaceTexture	: register(t0);
-Texture2D SpecularMap		: register(t1);
-Texture2D NormalMap		    : register(t2);
-TextureCube SkyTexture      : register(t3);
+Texture2D Albedo        	: register(t0);
+Texture2D NormalMap 		: register(t1);
+Texture2D RoughnessMap		: register(t2);
+Texture2D MetalnessMap		: register(t3);
+TextureCube SkyTexture      : register(t4);
 SamplerState BasicSampler	: register(s0);
 
 // --------------------------------------------------------
@@ -30,6 +30,10 @@ SamplerState BasicSampler	: register(s0);
 // --------------------------------------------------------
 float4 main(VertexToPixel_NormalMap input) : SV_TARGET
 {
+    //
+    // NORMAL SAMPLING
+    // 
+    
     // Make sure input normal and tangent are normalized before using them for anything
     input.normal = normalize(input.normal);
     input.tangent = normalize(input.tangent);
@@ -44,25 +48,50 @@ float4 main(VertexToPixel_NormalMap input) : SV_TARGET
     float3 unpackedNormal = NormalMap.Sample(BasicSampler, input.uv).rgb * 2.0f - 1.0f;
     input.normal = mul(unpackedNormal, TBN);
 
+    //
+    // ALBEDO SAMPLING
+    //
+
     // Get surface color and roughness from texture
-    float3 surfaceColor = SurfaceTexture.Sample(BasicSampler, input.uv).rgb;
+    float3 surfaceColor = Albedo.Sample(BasicSampler, input.uv).rgb;
     // Texture needs to be reverse-gamma-corrected since gamma correction happens later
     surfaceColor = pow(surfaceColor, 2.2f); 
     surfaceColor *= colorTint;
-    float specMapValue = SpecularMap.Sample(BasicSampler, input.uv).r;
+
+    //
+    // METALNESS/ROUGHNESS SAMPLING
+    //
+
+    float roughness = RoughnessMap.Sample(BasicSampler, input.uv).r;
+    float metalness = MetalnessMap.Sample(BasicSampler, input.uv).r;
+
+    // Determine specular color based on metalness
+    float3 specColor = lerp(F0_NON_METAL, surfaceColor.rgb, metalness);
+
+    //
+    // LIGHT CALCULATIONS
+    //
 
     // Loop through lights and calculate each light's result
-    float3 finalLightResult =
-        LightingLoop(
-            lights,
-            input.normal,
-            input.worldPosition,
-            cameraPos,
-            roughness,
-            surfaceColor,
-            specMapValue);
+    float3 finalLightResult = 0.0f;
+    for (int i = 0; i < LIGHT_COUNT; i++)
+    {
+        int type = lights[i].Type;
+        if (type == LIGHT_TYPE_DIRECTIONAL)
+        {
+            finalLightResult += DirLightPBR(lights[i], input.normal, cameraPos, input.worldPosition, roughness, specColor, metalness, surfaceColor);
+        }
+        if (type == LIGHT_TYPE_POINT)
+        {
+            finalLightResult += PointLightPBR(lights[i], input.normal, cameraPos, input.worldPosition, roughness, specColor, metalness, surfaceColor);
+        }
+    }
 
     float3 finalColor = finalLightResult + (surfaceColor.rgb * ambient);
+
+    //
+    // ENVIRONMENT MAP/GAMMA CALCULATIONS
+    //
 
     // Take care of skybox reflection
     float3 dirFromCamera = normalize(input.worldPosition - cameraPos);
@@ -72,7 +101,7 @@ float4 main(VertexToPixel_NormalMap input) : SV_TARGET
     finalColor = pow(finalColor, 1.0f / 2.2f);
 
     // Lerp between surface color up to this point and the sampled sky color based on fresnel term
-    finalColor = lerp(finalColor, skySample, SkyReflectionFresnel(F0_NON_METAL, input.normal, dirFromCamera));
+    //finalColor = lerp(finalColor, skySample, SkyReflectionFresnel(F0_NON_METAL, input.normal, dirFromCamera));
 
     return float4(finalColor, 1);
 }
