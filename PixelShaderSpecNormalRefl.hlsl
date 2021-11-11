@@ -1,4 +1,5 @@
 #include "ShaderIncludes.hlsli"
+#include "PBRIncludes.hlsli"
 
 cbuffer ExternalData : register(b0)
 {
@@ -71,7 +72,7 @@ float4 main(VertexToPixel_NormalMap input) : SV_TARGET
     finalColor = pow(finalColor, 1.0f / 2.2f);
 
     // Lerp between surface color up to this point and the sampled sky color based on fresnel term
-    finalColor = lerp(finalColor, skySample, SchlickFresnel(R0_NON_METAL, input.normal, dirFromCamera));
+    finalColor = lerp(finalColor, skySample, SkyReflectionFresnel(F0_NON_METAL, input.normal, dirFromCamera));
 
     return float4(finalColor, 1);
 }

@@ -76,9 +76,6 @@ struct VertexShaderInput
 
 #define LIGHT_COUNT					5
 
-#define R0_NON_METAL				0.04f
-#define R0_CHROME					0.6f
-
 //
 // LIGHTS STRUCT
 //
@@ -217,7 +214,12 @@ float3 LightingLoop(
 }
 
 // Returns reflection coefficient based on Schlick approx.
-float SchlickFresnel(float R0, float3 normal, float3 dirFromCamera)
+//
+// R0 - reflection factor for material when normal is straight on
+// normal - surface normal of object
+// dirFromCamera - the direction from the pixel's position to the camera
+//
+float SkyReflectionFresnel(float R0, float3 normal, float3 dirFromCamera)
 {
 	float3 cosTheta = saturate(dot(normal, -dirFromCamera));
 	return R0 + (1 - R0) * pow(1 - cosTheta, 5);
