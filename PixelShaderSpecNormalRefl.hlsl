@@ -44,7 +44,10 @@ float4 main(VertexToPixel_NormalMap input) : SV_TARGET
     input.normal = mul(unpackedNormal, TBN);
 
     // Get surface color and roughness from texture
-    float3 surfaceColor = pow(SurfaceTexture.Sample(BasicSampler, input.uv).rgb, 2.2f);
+    float3 surfaceColor = SurfaceTexture.Sample(BasicSampler, input.uv).rgb;
+    // Texture needs to be reverse-gamma-corrected since gamma correction happens later
+    surfaceColor = pow(surfaceColor, 2.2f); 
+    surfaceColor *= colorTint;
     float specMapValue = SpecularMap.Sample(BasicSampler, input.uv).r;
 
     // Loop through lights and calculate each light's result
@@ -58,14 +61,17 @@ float4 main(VertexToPixel_NormalMap input) : SV_TARGET
             surfaceColor,
             specMapValue);
 
-    float3 finalColor = finalLightResult + (colorTint.rgb * ambient);
+    float3 finalColor = finalLightResult + (surfaceColor.rgb * ambient);
 
     // Take care of skybox reflection
-    //float3 dirFromCamera = normalize(input.worldPosition - cameraPos);
-    //float3 skySample = SkyTexture.Sample(BasicSampler, reflect(dirFromCamera, input.normal)).rgb;
-    //
-    //// Lerp between surface color up to this point and the sampled sky color based on fresnel term
-    //finalColor = lerp(finalColor, skySample, SchlickFresnel(R0_NON_METAL, input.normal, dirFromCamera));
+    float3 dirFromCamera = normalize(input.worldPosition - cameraPos);
+    float3 skySample = SkyTexture.Sample(BasicSampler, reflect(dirFromCamera, input.normal)).rgb;
 
-    return float4(pow(finalColor, 1.0f / 2.2f), 1);
+    // Gamma correct finalColor before lerping between it and the already gamma-correct sky sample
+    finalColor = pow(finalColor, 1.0f / 2.2f);
+
+    // Lerp between surface color up to this point and the sampled sky color based on fresnel term
+    finalColor = lerp(finalColor, skySample, SchlickFresnel(R0_NON_METAL, input.normal, dirFromCamera));
+
+    return float4(finalColor, 1);
 }

@@ -98,7 +98,7 @@ void Game::CreateSampleLights()
     Light directionalLight1 =
         Light(
             { 1, 0, 0 },    // Direction
-            { 1, 0, 0 },    // Color
+            { 1, 1, 1 },    // Color
             1.0f);          // Intensity
 
     Light directionalLight2 =
@@ -418,7 +418,7 @@ void Game::Update(float deltaTime, float totalTime)
             e.GetMaterial()->SetUvScale(1, 1);
         }
 
-        if (gammaCorrectTextures) 
+        if (environmentReflections)
         {
             e.GetMaterial()->SetPixelShader(pixelShaderSpecNormalRefl);
         }
@@ -440,8 +440,8 @@ void Game::Update(float deltaTime, float totalTime)
     if (Input::GetInstance().KeyPress('U')) offsetUvs = !offsetUvs;
     if (Input::GetInstance().KeyPress('G'))
     {
-        gammaCorrectTextures = !gammaCorrectTextures;
-        std::cout << "Gamma correct textures " << gammaCorrectTextures << std::endl;
+        environmentReflections = !environmentReflections;
+        std::cout << "Sky reflections " << (environmentReflections ? "On" : "Off") << std::endl;
     }
     camera->SetFoV(fov);
 }

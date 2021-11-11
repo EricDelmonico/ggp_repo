@@ -44,6 +44,8 @@ float4 main(VertexToPixel_NormalMap input) : SV_TARGET
     
     // Get surface color and roughness from texture
     float3 surfaceColor = SurfaceTexture.Sample(BasicSampler, input.uv).rgb;
+    surfaceColor *= colorTint;
+    surfaceColor = pow(surfaceColor, 2.2f);
     float specMapValue = SpecularMap.Sample(BasicSampler, input.uv).r;
     
     // Loop through lights and calculate each light's result
@@ -57,7 +59,7 @@ float4 main(VertexToPixel_NormalMap input) : SV_TARGET
             surfaceColor,
             specMapValue);
     
-    float3 finalColor = finalLightResult + (colorTint.rgb * ambient);
+    float3 finalColor = finalLightResult + (surfaceColor.rgb * ambient);
     
     return float4(pow(finalColor, 1.0f / 2.2f), 1);
 }

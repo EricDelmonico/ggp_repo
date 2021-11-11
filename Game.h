@@ -83,5 +83,5 @@ private:
 	bool moveEntities = false;
 	bool offsetUvs = false;
 	bool scaleUvs = false;
-	bool gammaCorrectTextures = false;
+	bool environmentReflections = true;
 };
