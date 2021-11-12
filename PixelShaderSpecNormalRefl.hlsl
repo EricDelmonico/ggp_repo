@@ -73,7 +73,7 @@ float4 main(VertexToPixel_NormalMap input) : SV_TARGET
     //
 
     // Loop through lights and calculate each light's result
-    float3 finalLightResult = 0.0f;
+    float3 finalLightResult = (0.0f).rrr;
     for (int i = 0; i < LIGHT_COUNT; i++)
     {
         int type = lights[i].Type;
