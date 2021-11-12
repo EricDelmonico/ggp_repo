@@ -80,7 +80,7 @@ void Game::Init()
             0,                          // y
             -20,                        // z
             5.0f,                       // Move speed
-            0.3f,                       // Look speed  
+            3.0f,                       // Look speed  
             XM_PIDIV4,                  // FOV
             (float)width / height));    // Aspect
 
@@ -97,20 +97,20 @@ void Game::CreateSampleLights()
     // Directional lights
     Light directionalLight1 =
         Light(
-            { 1, 0, 0 },    // Direction
+            { 1, 1, 0 },    // Direction
             { 1, 1, 1 },    // Color
             1.0f);          // Intensity
 
     Light directionalLight2 =
         Light(
             { 0, -1, 0 },    // Direction
-            { 0, 1, 0 },    // Color
+            { 1, 1, 1 },    // Color
             1.0f);          // Intensity
 
     Light directionalLight3 =
         Light(
             { -1, 1, -0.5f },   // Direction
-            { 0, 0, 1 },        // Color
+            { 1, 1, 1 },        // Color
             1.0f);              // Intensity
 
     // Point lights
