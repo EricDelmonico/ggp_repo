@@ -11,14 +11,22 @@ Camera::Camera(
     float moveSpeed,
     float lookSpeed,
     float fov,
-    float aspectRatio) :
+    float aspectRatio,
+    bool perspective,
+    float orthoSize,
+    float pitch,
+    float yaw,
+    float roll) :
     movementSpeed(moveSpeed),
     mouseLookSpeed(lookSpeed),
     fieldOfView(fov),
-    aspectRatio(aspectRatio)
+    aspectRatio(aspectRatio),
+    perspective(perspective),
+    orthoSize(orthoSize)
 {
     // Set up the transform
     transform.SetPosition(x, y, z);
+    transform.SetPitchYawRoll(pitch, yaw, roll);
 
     // Set up our matrices
     UpdateViewMatrix();
@@ -83,11 +91,23 @@ void Camera::UpdateViewMatrix()
 
 void Camera::UpdateProjectionMatrix(float aspectRatio)
 {
-    XMMATRIX p = XMMatrixPerspectiveFovLH(
-        fieldOfView, 
-        aspectRatio, 
-        0.01f,       // Near clip plane distance
-        100.0f);     // Far clip plane distance
+    XMMATRIX p;
+    if (perspective) 
+    {
+        p = XMMatrixPerspectiveFovLH(
+            fieldOfView,
+            aspectRatio,
+            0.01f,       // Near clip plane distance
+            100.0f);     // Far clip plane distance
+    }
+    else 
+    {
+        p = XMMatrixOrthographicLH(
+            orthoSize * aspectRatio,
+            orthoSize,
+            0.01f,
+            100.0f);
+    }
 
     XMStoreFloat4x4(&projectionMatrix, p);
 }
@@ -116,4 +136,14 @@ void Camera::SetFoV(float fov)
 {
     fieldOfView = fov;
     UpdateProjectionMatrix(aspectRatio);
+}
+
+float Camera::GetOrthoSize()
+{
+    return orthoSize;
+}
+
+void Camera::SetOrthoSize(float size)
+{
+    orthoSize = size;
 }

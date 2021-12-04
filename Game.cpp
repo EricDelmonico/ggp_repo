@@ -101,11 +101,52 @@ void Game::CreateSampleLights()
             { 1, 1, 1 },    // Color
             1.0f);          // Intensity
 
+    // Shadow casting light
     Light directionalLight2 =
         Light(
             { 0, -1, 0 },    // Direction
             { 1, 1, 1 },    // Color
             1.0f);          // Intensity
+
+    // Shadow map init
+    D3D11_TEXTURE2D_DESC depthStencilDesc = {};
+    depthStencilDesc.Width = width;
+    depthStencilDesc.Height = height;
+    depthStencilDesc.MipLevels = 1;
+    depthStencilDesc.ArraySize = 1;
+    depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    depthStencilDesc.Usage = D3D11_USAGE_DEFAULT;
+    depthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+    depthStencilDesc.CPUAccessFlags = 0;
+    depthStencilDesc.MiscFlags = 0;
+    depthStencilDesc.SampleDesc.Count = 1;
+    depthStencilDesc.SampleDesc.Quality = 0;
+
+    ID3D11Texture2D* depthBufferTexture = 0;
+    device->CreateTexture2D(&depthStencilDesc, 0, &depthBufferTexture);
+    if (depthBufferTexture != 0)
+    {
+        device->CreateDepthStencilView(
+            depthBufferTexture,
+            0,
+            shadowMapDSV.GetAddressOf());
+        depthBufferTexture->Release();
+    }
+
+    // Light camera init
+    shadowMapCamera = std::make_shared<Camera>(
+        0,                      // x
+        10,                     // y
+        -1,                      // z
+        0,                      // move speed
+        0,                      // look speed
+        0,                      // fov
+        (float)width / height,  // aspect ratio
+        false,                  // perspective bool
+        10,                     // orthographic viewport height
+        90,                     // pitch
+        0,                      // yaw
+        0);                     // roll
 
     Light directionalLight3 =
         Light(
@@ -514,4 +555,8 @@ void Game::GenerateCircle(float radius, int subdivisions, XMFLOAT4 color, float 
 
     // assign the circle mesh with these verts/indices
     circle = std::make_shared<Mesh>(&outerVertices[0], (int)outerVertices.size(), &indices[0], (int)indices.size(), device, context);
+}
+
+void Game::RenderShadowMap()
+{
 }

@@ -6,13 +6,18 @@ class Camera
 {
 public:
     Camera(
-        float x, 
-        float y, 
-        float z, 
-        float moveSpeed, 
-        float lookSpeed, 
-        float fov, 
-        float aspectRatio);
+        float x,
+        float y,
+        float z,
+        float moveSpeed,
+        float lookSpeed,
+        float fov,
+        float aspectRatio,
+        bool perspective = true,
+        float orthoSize = 2.5f,
+        float pitch = 0,
+        float yaw = 0,
+        float roll = 0);
     ~Camera();
 
     // Update methods
@@ -29,6 +34,9 @@ public:
     float GetFoV();
     void SetFoV(float fov);
 
+    float GetOrthoSize();
+    void SetOrthoSize(float size);
+
 private:
     
     // Camera matrices
@@ -41,5 +49,9 @@ private:
     float mouseLookSpeed;
     float fieldOfView;
     float aspectRatio;
+
+    bool perspective;
+
+    float orthoSize;
 };
 

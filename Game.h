@@ -36,6 +36,7 @@ private:
 	void CreateSampleLights();
 	void CreateMaterials();
 	void GenerateCircle(float radius, int subdivisions, DirectX::XMFLOAT4 color, float xOffset);
+	void RenderShadowMap();
 	
 	void UpdateEntity(Entity& e, float deltaTime, float totalTime);
 
@@ -84,4 +85,8 @@ private:
 	bool offsetUvs = false;
 	bool scaleUvs = false;
 	bool spheresOnly = true;
+
+	// Shadowmap variables
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> shadowMapDSV;
+	std::shared_ptr<Camera> shadowMapCamera;
 };
