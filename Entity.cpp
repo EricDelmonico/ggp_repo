@@ -31,9 +31,9 @@ Material* Entity::GetMaterial()
 }
 
 // Draws this Entity using its mesh and transform
-void Entity::Draw(Camera& camera, float totalTime)
+void Entity::Draw(Camera& camera, Camera& lightCamera, float totalTime)
 {
-	material->PrepareForDraw(camera, totalTime, transform);
+	material->PrepareForDraw(camera, totalTime, transform, lightCamera);
 
 	mesh->Draw();
 }

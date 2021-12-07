@@ -33,7 +33,7 @@ public:
     void AddTextureSRV(std::string shaderName, Microsoft::WRL::ComPtr <ID3D11ShaderResourceView> srv);
     void AddSampler(std::string shaderName, Microsoft::WRL::ComPtr<ID3D11SamplerState> sampler);
 
-    void PrepareForDraw(Camera& camera, float totalTime, Transform& transform);
+    void PrepareForDraw(Camera& camera, float totalTime, Transform& transform, Camera& lightCamera);
 
 private:
     DirectX::XMFLOAT4 colorTint;

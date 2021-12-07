@@ -19,7 +19,7 @@ public:
     // Returns a pointer to this Entity's material
     Material* GetMaterial();
     // Draws this Entity using its mesh and transform
-    void Draw(Camera& camera, float totalTime = 0.0f);
+    void Draw(Camera& camera, Camera& lightCamera, float totalTime = 0.0f);
 private:
     Transform transform;
     std::shared_ptr<Mesh> mesh;

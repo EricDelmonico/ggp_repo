@@ -109,35 +109,38 @@ void Game::CreateSampleLights()
             1.0f);          // Intensity
 
     // Shadow map init
-    D3D11_TEXTURE2D_DESC depthStencilDesc = {};
-    depthStencilDesc.Width = width;
-    depthStencilDesc.Height = height;
-    depthStencilDesc.MipLevels = 1;
-    depthStencilDesc.ArraySize = 1;
-    depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    depthStencilDesc.Usage = D3D11_USAGE_DEFAULT;
-    depthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
-    depthStencilDesc.CPUAccessFlags = 0;
-    depthStencilDesc.MiscFlags = 0;
-    depthStencilDesc.SampleDesc.Count = 1;
-    depthStencilDesc.SampleDesc.Quality = 0;
+    shadowMapResolution = 1024;
+    D3D11_TEXTURE2D_DESC shadowTexDesc = {};
+    shadowTexDesc.Width = width;
+    shadowTexDesc.Height = height;
+    shadowTexDesc.MipLevels = 1;
+    shadowTexDesc.ArraySize = 1;
+    shadowTexDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+    shadowTexDesc.Usage = D3D11_USAGE_DEFAULT;
+    shadowTexDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+    shadowTexDesc.CPUAccessFlags = 0;
+    shadowTexDesc.MiscFlags = 0;
+    shadowTexDesc.SampleDesc.Count = 1;
+    shadowTexDesc.SampleDesc.Quality = 0;
 
-    ID3D11Texture2D* depthBufferTexture = 0;
-    device->CreateTexture2D(&depthStencilDesc, 0, &depthBufferTexture);
-    if (depthBufferTexture != 0)
-    {
-        device->CreateDepthStencilView(
-            depthBufferTexture,
-            0,
-            shadowMapDSV.GetAddressOf());
-        depthBufferTexture->Release();
-    }
+    Microsoft::WRL::ComPtr<ID3D11Texture2D> shadowMapTex;
+    device->CreateTexture2D(&shadowTexDesc, 0, shadowMapTex.GetAddressOf());
+
+    // Create depth stencil
+    D3D11_DEPTH_STENCIL_VIEW_DESC depthStencDesc = {};
+    depthStencDesc.Format = DXGI_FORMAT_D32_FLOAT;
+    depthStencDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+    depthStencDesc.Texture2D.MipSlice = 0;
+    device->CreateDepthStencilView(
+        shadowMapTex.Get(),
+        &depthStencDesc,
+        shadowMapDSV.GetAddressOf());
 
     // Light camera init
     shadowMapCamera = std::make_shared<Camera>(
         0,                      // x
         10,                     // y
-        -1,                      // z
+        0,                      // z
         0,                      // move speed
         0,                      // look speed
         0,                      // fov
@@ -203,7 +206,7 @@ void Game::CreateMaterials()
 
     // Actually create the materials
     XMFLOAT4 white = { 1, 1, 1, 1 };
-    for (auto& t : textureFiles) 
+    for (auto& t : textureFiles)
     {
         Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> tempAlbedo;
         Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> tempNormal;
@@ -211,7 +214,7 @@ void Game::CreateMaterials()
         Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> tempRoughness;
         CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/PBR_Textures/" + t + L"_albedo.png").c_str(), nullptr, tempAlbedo.GetAddressOf());
         CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/PBR_Textures/" + t + L"_normals.png").c_str(), nullptr, tempNormal.GetAddressOf());
-        CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/PBR_Textures/" + t + L"_metal.png").c_str(), nullptr, tempMetalness .GetAddressOf());
+        CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/PBR_Textures/" + t + L"_metal.png").c_str(), nullptr, tempMetalness.GetAddressOf());
         CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(L"../../Assets/PBR_Textures/" + t + L"_roughness.png").c_str(), nullptr, tempRoughness.GetAddressOf());
 
         std::shared_ptr<Material> material = std::make_shared<Material>(white, pixelShaderSpecNormalRefl, vertexShaderNormalMap);
@@ -240,12 +243,14 @@ void Game::LoadShaders()
     vertexShader = std::make_shared<SimpleVertexShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"VertexShader.cso").c_str());
     vertexShaderNormalMap = std::make_shared<SimpleVertexShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"VertexShaderNormalMap.cso").c_str());
     vertexShaderSky = std::make_shared<SimpleVertexShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"VertexShaderSky.cso").c_str());
+    vertexShaderShadowMap = std::make_shared<SimpleVertexShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"ShadowMapVS.cso").c_str());
 
     // Pixel shaders
     pixelShaderSky = std::make_shared<SimplePixelShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"PixelShaderSky.cso").c_str());
     pixelShaderSpec = std::make_shared<SimplePixelShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"PixelShaderSpecOnly.cso").c_str());
     pixelShaderSpecAndNormal = std::make_shared<SimplePixelShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"PixelShaderSpecAndNormal.cso").c_str());
-    pixelShaderSpecNormalRefl = std::make_shared<SimplePixelShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"pixelShaderSpecNormalRefl.cso").c_str());
+    pixelShaderSpecNormalRefl = std::make_shared<SimplePixelShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"PixelShaderSpecNormalRefl.cso").c_str());
+    pixelShaderSpecNormalReflShadow = std::make_shared<SimplePixelShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"PixelShaderSpecNormalReflShadow").c_str());
     customPixelShader = std::make_shared<SimplePixelShader>(device.Get(), context.Get(), GetFullPathTo_Wide(L"CustomPS.cso").c_str());
 }
 
@@ -463,6 +468,9 @@ void Game::Draw(float deltaTime, float totalTime)
 
     // Draw entities
     auto entityList = spheresOnly ? entitiesAllSpheres : entities;
+
+    // Render the shadow map before the other objects
+    RenderShadowMap(entityList);
     for (auto& e : entityList)
     {
         auto pixelShader = e.GetMaterial()->GetPixelShader();
@@ -473,8 +481,7 @@ void Game::Draw(float deltaTime, float totalTime)
             &lights[0],                             // Address of the data to set the shader variable to
             sizeof(Light) * (int)lights.size());    // The size of the data to set
 
-        Camera* c = camera.get();
-        e.Draw(*c, totalTime);
+        e.Draw(*camera, *shadowMapCamera, totalTime);
     }
 
     // Draw sky last!
@@ -557,6 +564,24 @@ void Game::GenerateCircle(float radius, int subdivisions, XMFLOAT4 color, float 
     circle = std::make_shared<Mesh>(&outerVertices[0], (int)outerVertices.size(), &indices[0], (int)indices.size(), device, context);
 }
 
-void Game::RenderShadowMap()
+void Game::RenderShadowMap(std::vector<Entity> entityList)
 {
+    vertexShaderShadowMap->SetShader();
+    context->ClearDepthStencilView(
+        shadowMapDSV.Get(),
+        D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
+        1.0f,
+        0);
+    for (auto& e : entityList) 
+    {
+        vertexShaderShadowMap->SetMatrix4x4("world", e.GetTransform()->GetWorldMatrix());
+        vertexShaderShadowMap->SetMatrix4x4("view", shadowMapCamera->GetView());
+        vertexShaderShadowMap->SetMatrix4x4("projection", shadowMapCamera->GetProjection());
+        vertexShaderShadowMap->CopyAllBufferData();
+
+        context->PSSetShader(0, 0, 0);
+        context->OMSetRenderTargets(0, 0, shadowMapDSV.Get());
+        e.GetMesh()->Draw();
+        context->OMSetRenderTargets(1, backBufferRTV.GetAddressOf(), depthStencilView.Get());
+    }
 }

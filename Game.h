@@ -36,7 +36,7 @@ private:
 	void CreateSampleLights();
 	void CreateMaterials();
 	void GenerateCircle(float radius, int subdivisions, DirectX::XMFLOAT4 color, float xOffset);
-	void RenderShadowMap();
+	void RenderShadowMap(std::vector<Entity> entityList);
 	
 	void UpdateEntity(Entity& e, float deltaTime, float totalTime);
 
@@ -50,11 +50,13 @@ private:
 	std::shared_ptr<SimplePixelShader> pixelShaderSky;
 	std::shared_ptr<SimplePixelShader> pixelShaderSpecAndNormal;
 	std::shared_ptr<SimplePixelShader> pixelShaderSpecNormalRefl;
+	std::shared_ptr<SimplePixelShader> pixelShaderSpecNormalReflShadow;
 	std::shared_ptr<SimplePixelShader> customPixelShader;
 
 	std::shared_ptr<SimpleVertexShader> vertexShader;
 	std::shared_ptr<SimpleVertexShader> vertexShaderSky;
 	std::shared_ptr<SimpleVertexShader> vertexShaderNormalMap;
+	std::shared_ptr<SimpleVertexShader> vertexShaderShadowMap;
 
 	// Some sample meshes
 	std::shared_ptr<Mesh> tri;
@@ -89,4 +91,5 @@ private:
 	// Shadowmap variables
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> shadowMapDSV;
 	std::shared_ptr<Camera> shadowMapCamera;
+	int shadowMapResolution;
 };

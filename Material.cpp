@@ -74,7 +74,7 @@ void Material::AddSampler(std::string shaderName, Microsoft::WRL::ComPtr<ID3D11S
     samplers.insert({ shaderName, sampler });
 }
 
-void Material::PrepareForDraw(Camera& camera, float totalTime, Transform& transform)
+void Material::PrepareForDraw(Camera& camera, float totalTime, Transform& transform, Camera& lightCamera)
 {
     // Set vertex shader data
     vertexShader->SetShader();
@@ -82,6 +82,8 @@ void Material::PrepareForDraw(Camera& camera, float totalTime, Transform& transf
     vertexShader->SetMatrix4x4("worldInvTranspose", transform.GetWorldInverseTransposeMatrix());
     vertexShader->SetMatrix4x4("view", camera.GetView());
     vertexShader->SetMatrix4x4("projection", camera.GetProjection());
+    vertexShader->SetMatrix4x4("lightProj", lightCamera.GetProjection());
+    vertexShader->SetMatrix4x4("lightView", lightCamera.GetView());
     vertexShader->CopyAllBufferData();
 
     // Set pixel shader data
