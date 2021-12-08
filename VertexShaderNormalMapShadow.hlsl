@@ -43,10 +43,10 @@ VertexToPixel_NormalMapShadowMap main(VertexShaderInput input)
 	output.tangent = mul((float3x3)worldInvTranspose, input.tangent);
 
 	// Pass the world position through
-	output.worldPosition = mul(world, float4(input.localPosition, 1)).xyz;
+	output.worldPosition = mul(world, float4(input.localPosition, 1.0f)).xyz;
 
 	// Calculate shadow map position based on light view and projection
-	output.shadowMapPosition = mul(lightProj, mul(lightView, output.worldPosition));
+	output.shadowMapPosition = mul(lightProj, mul(lightView, mul(world, float4(input.localPosition, 1.0f))));
 
 	// Whatever we return will make its way through the pipeline to the
 	// next programmable stage we're using (the pixel shader for now)

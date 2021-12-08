@@ -56,7 +56,8 @@ private:
 	std::shared_ptr<SimpleVertexShader> vertexShader;
 	std::shared_ptr<SimpleVertexShader> vertexShaderSky;
 	std::shared_ptr<SimpleVertexShader> vertexShaderNormalMap;
-	std::shared_ptr<SimpleVertexShader> vertexShaderShadowMap;
+	std::shared_ptr<SimpleVertexShader> vertexShaderNormalMapShadowMap;
+	std::shared_ptr<SimpleVertexShader> shadowVS;
 
 	// Some sample meshes
 	std::shared_ptr<Mesh> tri;
@@ -90,6 +91,9 @@ private:
 
 	// Shadowmap variables
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> shadowMapDSV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> shadowMapSRV;
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> shadowSampler;
+	Microsoft::WRL::ComPtr<ID3D11RasterizerState> shadowMapRasterizerState;
 	std::shared_ptr<Camera> shadowMapCamera;
 	int shadowMapResolution;
 };

@@ -19,6 +19,7 @@ Texture2D MetalnessMap		: register(t3);
 TextureCube SkyTexture      : register(t4);
 Texture2D ShadowMap         : register(t5);
 SamplerState BasicSampler	: register(s0);
+SamplerComparisonState  ShadowSampler  : register(s1);
 
 // --------------------------------------------------------
 // The entry point (main method) for our pixel shader
@@ -31,6 +32,21 @@ SamplerState BasicSampler	: register(s0);
 // --------------------------------------------------------
 float4 main(VertexToPixel_NormalMapShadowMap input) : SV_TARGET
 {
+    //
+    // SHADOWING
+    //
+
+    // Distance from light
+    float lightDepth = input.shadowMapPosition.z / input.shadowMapPosition.w;
+
+    // Adjust -1 to 1 to 0 to 1
+    float2 shadowUV = input.shadowMapPosition.xy / input.shadowMapPosition.w * 0.5f + 0.5f;
+    shadowUV.y = 1.0f - shadowUV.y; // Flip for sampling
+
+    float shadowDepth = ShadowMap.SampleCmpLevelZero(ShadowSampler, shadowUV, lightDepth);
+
+    return float4(shadowDepth.rrr, 1.0f);
+
     //
     // NORMAL SAMPLING
     // 

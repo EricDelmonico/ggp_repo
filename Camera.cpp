@@ -103,7 +103,7 @@ void Camera::UpdateProjectionMatrix(float aspectRatio)
     else 
     {
         p = XMMatrixOrthographicLH(
-            orthoSize * aspectRatio,
+            orthoSize,
             orthoSize,
             0.01f,
             100.0f);
