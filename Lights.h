@@ -14,13 +14,15 @@ struct Light
 	float Intensity;				// All need light intesity
 	DirectX::XMFLOAT3 Color;		// All need a color
 	float SpotFalloff;				// Spot needs value to restrict cone
-	DirectX::XMFLOAT3 Padding;		// Padding to hit 16-byte boundary
+	int ShadowCasting;				// Whether the light should cast shadows
+	DirectX::XMFLOAT2 Padding;		// Padding to hit 16-byte boundary
 
 	// Creates a directional light with the given parameters
 	Light(
 		DirectX::XMFLOAT3 direction,
 		DirectX::XMFLOAT3 color,
-		float intensity) :
+		float intensity,
+		int shadowCasting = 0) :
 		Type(LIGHT_TYPE_DIRECTIONAL),
 		Direction(direction),
 		Range(),
@@ -28,6 +30,7 @@ struct Light
 		Intensity(intensity),
 		Color(color),
 		SpotFalloff(),
+		ShadowCasting(shadowCasting),
 		Padding()
 	{
 	}

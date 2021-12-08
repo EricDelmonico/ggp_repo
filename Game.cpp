@@ -67,7 +67,7 @@ void Game::Init()
     LoadShaders();
 
     // Shadow map init
-    shadowMapResolution = 1024;
+    shadowMapResolution = 2048;
     D3D11_TEXTURE2D_DESC shadowTexDesc = {};
     shadowTexDesc.Width = shadowMapResolution;
     shadowTexDesc.Height = shadowMapResolution;
@@ -109,10 +109,10 @@ void Game::Init()
     shadowSampDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
     shadowSampDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
     shadowSampDesc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
-    /*shadowSampDesc.BorderColor[0] = 1.0f;
+    shadowSampDesc.BorderColor[0] = 1.0f;
     shadowSampDesc.BorderColor[1] = 1.0f;
     shadowSampDesc.BorderColor[2] = 1.0f;
-    shadowSampDesc.BorderColor[3] = 1.0f;*/
+    shadowSampDesc.BorderColor[3] = 1.0f;
     device->CreateSamplerState(&shadowSampDesc, shadowSampler.GetAddressOf());
 
     // Create a rasterizer state
@@ -129,14 +129,14 @@ void Game::Init()
     shadowMapCamera = std::make_shared<Camera>(
         0,                      // x
         10,                     // y
-        5,                      // z
+        0,                      // z
         0,                      // move speed
         0,                      // look speed
         0,                      // fov
-        (float)width / height,  // aspect ratio
+        1,                      // aspect ratio
         false,                  // perspective bool
         20,                     // orthographic viewport height
-        90,                     // pitch
+        DirectX::XM_PIDIV4,     // pitch
         0,                      // yaw
         0);                     // roll
 
@@ -179,9 +179,10 @@ void Game::CreateSampleLights()
     // Shadow casting light
     Light directionalLight2 =
         Light(
-            { 0, -1, 0 },    // Direction
+            { 0, -1, 1 },   // Direction
             { 1, 1, 1 },    // Color
-            1.0f);          // Intensity
+            1.0f,           // Intensity
+            1);             // Shadow casting
 
     Light directionalLight3 =
         Light(
@@ -207,9 +208,9 @@ void Game::CreateSampleLights()
     // Push all the lights
     lights.push_back(directionalLight1);
     lights.push_back(directionalLight2);
-    lights.push_back(directionalLight3);
-    lights.push_back(pointLight1);
-    lights.push_back(pointLight2);
+    //lights.push_back(directionalLight3);
+    //lights.push_back(pointLight1);
+    //lights.push_back(pointLight2);
 }
 
 void Game::CreateMaterials()
@@ -230,11 +231,11 @@ void Game::CreateMaterials()
     // Populate texture file names manually
     textureFiles.push_back(L"bronze");
     textureFiles.push_back(L"cobblestone");
-    textureFiles.push_back(L"floor");
-    textureFiles.push_back(L"paint");
-    textureFiles.push_back(L"rough");
-    textureFiles.push_back(L"scratched");
     textureFiles.push_back(L"wood");
+    textureFiles.push_back(L"crate");
+    textureFiles.push_back(L"retrotv");
+    textureFiles.push_back(L"r2d2");
+    textureFiles.push_back(L"guitar");
 
     // Actually create the materials
     XMFLOAT4 white = { 1, 1, 1, 1 };
@@ -361,6 +362,11 @@ void Game::CreateBasicGeometry()
     std::shared_ptr<Mesh> quad_double_sided = std::make_shared<Mesh>(GetFullPathTo("../../Assets/Models/quad_double_sided.obj").c_str(), device, context);
     std::shared_ptr<Mesh> sphere = std::make_shared<Mesh>(GetFullPathTo("../../Assets/Models/sphere.obj").c_str(), device, context);
     std::shared_ptr<Mesh> torus = std::make_shared<Mesh>(GetFullPathTo("../../Assets/Models/torus.obj").c_str(), device, context);
+    std::shared_ptr<Mesh> crate = std::make_shared<Mesh>(GetFullPathTo("../../Assets/Models/crate2.obj").c_str(), device, context);
+    std::shared_ptr<Mesh> retrotv = std::make_shared<Mesh>(GetFullPathTo("../../Assets/Models/retrotv.obj").c_str(), device, context);
+    std::shared_ptr<Mesh> r2d2 = std::make_shared<Mesh>(GetFullPathTo("../../Assets/Models/r2d2.obj").c_str(), device, context);
+    std::shared_ptr<Mesh> guitar = std::make_shared<Mesh>(GetFullPathTo("../../Assets/Models/guitar.obj").c_str(), device, context);
+    std::shared_ptr<Mesh> retrotable = std::make_shared<Mesh>(GetFullPathTo("../../Assets/Models/retrotable.obj").c_str(), device, context);
 
     // Assign geometry and materials to some entities
     //
@@ -372,14 +378,20 @@ void Game::CreateBasicGeometry()
     // rough
     // scratched
     // wood
-    entities.push_back(Entity(cube, materials[L"bronze"]));
-    entities.push_back(Entity(cylinder, materials[L"cobblestone"]));
-    entities.push_back(Entity(helix, materials[L"floor"]));
-    entities.push_back(Entity(sphere, materials[L"scratched"]));
-    entities.push_back(Entity(torus, materials[L"rough"]));
-    entities.push_back(Entity(quad, materials[L"paint"]));
-    entities.push_back(Entity(quad_double_sided, materials[L"wood"]));
-    entities.push_back(Entity(floor, materials[L"wood"]));
+    entities.push_back(Entity(retrotv, materials[L"retrotv"]));
+    entities[entities.size() - 1].GetTransform()->SetScale(3.0f, 3.0f, 3.0f);
+    entities[entities.size() - 1].GetTransform()->SetPosition(-1, -1.5f, 3);
+    entities.push_back(Entity(guitar, materials[L"guitar"]));
+    entities[entities.size() - 1].GetTransform()->SetScale(1 / 30.0f, 1 / 30.0f, 1 / 30.0f);
+    entities[entities.size() - 1].GetTransform()->SetPosition(0.35f, -.05f, 3);
+    entities[entities.size() - 1].GetTransform()->SetPitchYawRoll(DirectX::XM_PIDIV4 / 4, -DirectX::XM_PIDIV2, 0);
+    entities.push_back(Entity(r2d2, materials[L"r2d2"]));
+    entities[entities.size() - 1].GetTransform()->SetPitchYawRoll(0, DirectX::XM_PIDIV2, 0);
+    entities[entities.size() - 1].GetTransform()->SetPosition(3, 0.18f, -3);
+    entities.push_back(Entity(crate, materials[L"crate"]));
+    entities[entities.size() - 1].GetTransform()->SetScale(1 / 18.0f, 1 / 18.0f, 1 / 18.0f);
+    entities[entities.size() - 1].GetTransform()->SetPosition(2.7f, -1.5f, -2.7f);
+    entities.push_back(Entity(floor, materials[L"wood"])); 
 
     entitiesAllSpheres.push_back(Entity(sphere, materials[L"bronze"]));
     entitiesAllSpheres.push_back(Entity(sphere, materials[L"cobblestone"]));
@@ -393,15 +405,18 @@ void Game::CreateBasicGeometry()
     // Move entities so they're lined up nicely
     for (int i = 0; i < entities.size() - 1; i++)
     {
-        entities[i].GetTransform()->SetPosition(((float)(i - 3) * 3), 0, 0);
+        auto transform = entities[i].GetTransform();
+        //transform->SetPosition(((float)(i - 3) * 3), transform->GetPosition().y, transform->GetPosition().z);
         entitiesAllSpheres[i].GetTransform()->SetPosition(((float)(i - 3) * 3), 0, 0);
     }
 
     // Scale the floor so it's nice and big to catch shadows
     entities[entities.size() - 1].GetTransform()->SetScale(10, 1, 10);
     entities[entities.size() - 1].GetTransform()->SetPosition(0, -1.5f, 0);
+    entities[entities.size() - 1].GetMaterial()->SetUvScale(5, 5);
     entitiesAllSpheres[entitiesAllSpheres.size() - 1].GetTransform()->SetScale(10, 1, 10);
     entitiesAllSpheres[entitiesAllSpheres.size() - 1].GetTransform()->SetPosition(0, -1.5f, 0);
+    entitiesAllSpheres[entitiesAllSpheres.size() - 1].GetMaterial()->SetUvScale(5, 5);
 }
 
 // --------------------------------------------------------
@@ -455,7 +470,6 @@ void Game::Update(float deltaTime, float totalTime)
     if (Input::GetInstance().KeyDown('O')) fov += 1.0f * deltaTime;
     if (Input::GetInstance().KeyDown('P')) fov -= 1.0f * deltaTime;
     if (Input::GetInstance().KeyPress('M')) moveEntities = !moveEntities;
-    if (Input::GetInstance().KeyPress('I')) scaleUvs = !scaleUvs;
     if (Input::GetInstance().KeyPress('U')) offsetUvs = !offsetUvs;
     if (Input::GetInstance().KeyPress('L')) spheresOnly = !spheresOnly;
     camera->SetFoV(fov);
@@ -476,16 +490,6 @@ void Game::UpdateEntity(Entity& e, float deltaTime, float totalTime)
     {
         auto offset = e.GetMaterial()->GetUvOffset();
         e.GetMaterial()->SetUvOffset(offset.x + deltaTime / 10, 0);
-    }
-
-    if (scaleUvs)
-    {
-        auto offset = e.GetMaterial()->GetUvScale();
-        e.GetMaterial()->SetUvScale(std::sin(totalTime / 3) + 1, 1);
-    }
-    else
-    {
-        e.GetMaterial()->SetUvScale(1, 1);
     }
 }
 

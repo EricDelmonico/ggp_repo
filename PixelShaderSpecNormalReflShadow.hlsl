@@ -45,8 +45,6 @@ float4 main(VertexToPixel_NormalMapShadowMap input) : SV_TARGET
 
     float shadowDepth = ShadowMap.SampleCmpLevelZero(ShadowSampler, shadowUV, lightDepth);
 
-    return float4(shadowDepth.rrr, 1.0f);
-
     //
     // NORMAL SAMPLING
     // 
@@ -96,7 +94,8 @@ float4 main(VertexToPixel_NormalMapShadowMap input) : SV_TARGET
         int type = lights[i].Type;
         if (type == LIGHT_TYPE_DIRECTIONAL)
         {
-            finalLightResult += DirLightPBR(lights[i], input.normal, cameraPos, input.worldPosition, roughness, specColor, metalness, surfaceColor);
+            float3 dirLightRes = DirLightPBR(lights[i], input.normal, cameraPos, input.worldPosition, roughness, specColor, metalness, surfaceColor);
+            finalLightResult += dirLightRes * (lights[i].ShadowCasting ? shadowDepth : 1.0f);
         }
         if (type == LIGHT_TYPE_POINT)
         {

@@ -84,10 +84,9 @@ private:
 	std::shared_ptr<Sky> skybox;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> skyboxSrv;
 
-	bool moveEntities = true;
+	bool moveEntities = false;
 	bool offsetUvs = false;
-	bool scaleUvs = false;
-	bool spheresOnly = true;
+	bool spheresOnly = false;
 
 	// Shadowmap variables
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> shadowMapDSV;

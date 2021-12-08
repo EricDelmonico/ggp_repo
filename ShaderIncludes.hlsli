@@ -99,7 +99,8 @@ struct Light
 	float Intensity;				// All need light intesity
 	float3 Color;					// All need a color
 	float SpotFalloff;				// Spot needs value to restrict cone
-	float3 Padding;					// Padding to hit 16-byte boundary
+	int ShadowCasting;				// Whether the light is shadow casting
+	float2 Padding;					// Padding to hit 16-byte boundary
 };
 
 
