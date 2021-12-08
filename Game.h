@@ -34,6 +34,7 @@ private:
 	void LoadShaders(); 
 	void CreateBasicGeometry();
 	void CreateSampleLights();
+	void InitShadowMap();
 	void CreateMaterials();
 	void GenerateCircle(float radius, int subdivisions, DirectX::XMFLOAT4 color, float xOffset);
 	void RenderShadowMap(std::vector<Entity> entityList);
@@ -95,4 +96,5 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11RasterizerState> shadowMapRasterizerState;
 	std::shared_ptr<Camera> shadowMapCamera;
 	int shadowMapResolution;
+	float shadowMapDimension = 10;
 };

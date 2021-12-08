@@ -65,9 +65,36 @@ void Game::Init()
     // geometry to draw and some simple camera matrices.
     //  - You'll be expanding and/or replacing these later
     LoadShaders();
+    InitShadowMap();
+    CreateMaterials();
+    CreateBasicGeometry();
 
+    // Tell the input assembler stage of the pipeline what kind of
+    // geometric primitives (points, lines or triangles) we want to draw.  
+    // Essentially: "What kind of shape should the GPU draw with our data?"
+    context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    // Camera once we have aspect ratio available
+    camera = std::shared_ptr<Camera>(
+        new Camera(
+            0,                          // x
+            0,                          // y
+            -20,                        // z
+            5.0f,                       // Move speed
+            3.0f,                       // Look speed  
+            XM_PIDIV4,                  // FOV
+            (float)width / height));    // Aspect
+
+    // Create sky
+    skybox = std::make_shared<Sky>(cube, skyboxSrv, pixelShaderSky, vertexShaderSky, samplerState, device);
+
+    CreateSampleLights();
+}
+
+void Game::InitShadowMap() 
+{
     // Shadow map init
-    shadowMapResolution = 2048;
+    shadowMapResolution = 1024;
     D3D11_TEXTURE2D_DESC shadowTexDesc = {};
     shadowTexDesc.Width = shadowMapResolution;
     shadowTexDesc.Height = shadowMapResolution;
@@ -129,40 +156,16 @@ void Game::Init()
     shadowMapCamera = std::make_shared<Camera>(
         0,                      // x
         10,                     // y
-        0,                      // z
+        -10,                    // z
         0,                      // move speed
         0,                      // look speed
         0,                      // fov
         1,                      // aspect ratio
         false,                  // perspective bool
-        20,                     // orthographic viewport height
+        shadowMapDimension,     // orthographic viewport height
         DirectX::XM_PIDIV4,     // pitch
         0,                      // yaw
         0);                     // roll
-
-    CreateMaterials();
-    CreateBasicGeometry();
-
-    // Tell the input assembler stage of the pipeline what kind of
-    // geometric primitives (points, lines or triangles) we want to draw.  
-    // Essentially: "What kind of shape should the GPU draw with our data?"
-    context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-    // Camera once we have aspect ratio available
-    camera = std::shared_ptr<Camera>(
-        new Camera(
-            0,                          // x
-            0,                          // y
-            -20,                        // z
-            5.0f,                       // Move speed
-            3.0f,                       // Look speed  
-            XM_PIDIV4,                  // FOV
-            (float)width / height));    // Aspect
-
-    // Create sky
-    skybox = std::make_shared<Sky>(cube, skyboxSrv, pixelShaderSky, vertexShaderSky, samplerState, device);
-
-    CreateSampleLights();
 }
 
 void Game::CreateSampleLights()
@@ -467,11 +470,28 @@ void Game::Update(float deltaTime, float totalTime)
 
     // Play with field of view
     float fov = camera->GetFoV();
+    bool shadowMapDimensionChanged = false;
     if (Input::GetInstance().KeyDown('O')) fov += 1.0f * deltaTime;
     if (Input::GetInstance().KeyDown('P')) fov -= 1.0f * deltaTime;
     if (Input::GetInstance().KeyPress('M')) moveEntities = !moveEntities;
     if (Input::GetInstance().KeyPress('U')) offsetUvs = !offsetUvs;
     if (Input::GetInstance().KeyPress('L')) spheresOnly = !spheresOnly;
+    if (Input::GetInstance().KeyDown('J')) 
+    {
+        shadowMapDimension -= 2 * deltaTime;
+        shadowMapDimensionChanged = true;
+    }
+    if (Input::GetInstance().KeyDown('K'))
+    {
+        shadowMapDimension += 2 * deltaTime;
+        shadowMapDimensionChanged = true;
+    }
+    if (shadowMapDimensionChanged)
+    {
+        shadowMapCamera->SetOrthoSize(shadowMapDimension);
+        shadowMapCamera->UpdateProjectionMatrix(1);
+    }
+
     camera->SetFoV(fov);
 }
 
