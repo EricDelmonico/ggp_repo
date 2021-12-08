@@ -211,9 +211,9 @@ void Game::CreateSampleLights()
     // Push all the lights
     lights.push_back(directionalLight1);
     lights.push_back(directionalLight2);
-    //lights.push_back(directionalLight3);
-    //lights.push_back(pointLight1);
-    //lights.push_back(pointLight2);
+    lights.push_back(directionalLight3);
+    lights.push_back(pointLight1);
+    lights.push_back(pointLight2);
 }
 
 void Game::CreateMaterials()
@@ -410,10 +410,8 @@ void Game::CreateBasicGeometry()
     entitiesAllSpheres.push_back(Entity(floor, materials[L"wood"]));
 
     // Move entities so they're lined up nicely
-    for (int i = 0; i < entities.size() - 1; i++)
+    for (int i = 0; i < entitiesAllSpheres.size() - 1; i++)
     {
-        auto transform = entities[i].GetTransform();
-        //transform->SetPosition(((float)(i - 3) * 3), transform->GetPosition().y, transform->GetPosition().z);
         entitiesAllSpheres[i].GetTransform()->SetPosition(((float)(i - 3) * 3), 0, 0);
     }
 
