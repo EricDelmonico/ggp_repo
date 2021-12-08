@@ -234,6 +234,10 @@ void Game::CreateMaterials()
     // Populate texture file names manually
     textureFiles.push_back(L"bronze");
     textureFiles.push_back(L"cobblestone");
+    textureFiles.push_back(L"floor");
+    textureFiles.push_back(L"paint");
+    textureFiles.push_back(L"rough");
+    textureFiles.push_back(L"scratched");
     textureFiles.push_back(L"wood");
     textureFiles.push_back(L"crate");
     textureFiles.push_back(L"retrotv");
